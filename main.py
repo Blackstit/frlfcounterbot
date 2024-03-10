@@ -74,6 +74,7 @@ def message_handler(update, context):
 
     # Применяем изменения к базе данных
     mydb.commit()
+    cursor.close()
 
 
 # Функция обработки команды /me
@@ -81,7 +82,9 @@ def me(update, context):
     # Получаем идентификатор пользователя, отправившего сообщение
     user_id = update.message.from_user.id
 
+    cursor = mydb.cursor()
     user_data = cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,)).fetchone()
+    cursor.close()
 
     if user_data:
         referrals_count = user_data[5]
@@ -142,9 +145,11 @@ def me(update, context):
 
 # Функция обработки команды /top
 def top(update, context):
+    cursor = mydb.cursor()
     # Получаем топ-10 пользователей по количеству репутации
     cursor.execute("SELECT username, reputation FROM user_stats ORDER BY reputation DESC LIMIT 10")
     top_users = cursor.fetchall()
+    cursor.close()
 
     if top_users:
         # Формируем сообщение с топ-10 пользователями
@@ -165,6 +170,7 @@ def give(update, context):
     # Получаем ID пользователя, отправившего команду
     sender_user_id = update.message.from_user.id
 
+    cursor = mydb.cursor()
     # Получаем количество токенов, которое отправляется
     if len(context.args) == 1:
         try:
@@ -209,9 +215,11 @@ def give(update, context):
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
 
+    cursor.close()
+
 
 # Токен вашего бота
-TOKEN = '6908271386:AAGps8jBks7fxN84EmK7H4OzHRipK4PhJHU'
+TOKEN = 'YOUR_TOKEN_HERE'
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
