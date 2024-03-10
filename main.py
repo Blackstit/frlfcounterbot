@@ -44,179 +44,157 @@ def message_handler(update, context):
     username = update.message.from_user.username
     message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Текущая дата и время
 
-    # Проверка, существует ли уже запись о пользователе в базе данных
-    cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,))
-    user_data = cursor.fetchone()
+    try:
+        # Проверка, существует ли уже запись о пользователе в базе данных
+        cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,))
+        user_data = cursor.fetchone()
 
-    if user_data:
-        # Если запись о пользователе существует, обновляем количество сообщений и дату последнего сообщения
-        cursor.execute("UPDATE user_stats SET message_count = message_count + 1, last_message_date = %s WHERE user_id = %s", (message_date, user_id,))
-    else:
-        # Если запись о пользователе отсутствует, удаляем сообщение пользователя
-        context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
+        if user_data:
+            # Если запись о пользователе существует, обновляем количество сообщений и дату последнего сообщения
+            cursor.execute("UPDATE user_stats SET message_count = message_count + 1, last_message_date = %s WHERE user_id = %s", (message_date, user_id,))
+        else:
+            # Если запись о пользователе отсутствует, удаляем сообщение пользователя
+            context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
 
-        # Отправляем сообщение о регистрации и приглашение зарегистрироваться
-        invite_message = f"@{username}, салют!\n\nЧтобы писать сообщения в чате, тебе сначала нужно зарегистрироваться в нашем боте. Это не займет у тебя больше минуты."
-        keyboard = [[InlineKeyboardButton("Зарегистрироваться", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=reply_markup)
+            # Отправляем сообщение о регистрации и приглашение зарегистрироваться
+            invite_message = f"@{username}, салют!\n\nЧтобы писать сообщения в чате, тебе сначала нужно зарегистрироваться в нашем боте. Это не займет у тебя больше минуты."
+            keyboard = [[InlineKeyboardButton("Зарегистрироваться", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=reply_markup)
 
-        return
+            return
 
-    # Получаем текущее количество сообщений пользователя
-    cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,))
-    message_count = cursor.fetchone()[0]
+        # Применяем изменения к базе данных
+        mydb.commit()
 
-    # Если количество сообщений кратно 10, начисляем 1 очко репутации
-    if message_count % 10 == 0:
-        # Увеличиваем репутацию на 1 и обновляем запись в базе данных
-        cursor.execute("UPDATE user_stats SET reputation = reputation + 1 WHERE user_id = %s", (user_id,))
-
-    # Применяем изменения к базе данных
-    mydb.commit()
-    cursor.close()
-
+    except mysql.connector.Error as err:
+        print(f"Ошибка MySQL: {err}")
 
 # Функция обработки команды /me
 def me(update, context):
-    # Получаем идентификатор пользователя, отправившего сообщение
-    user_id = update.message.from_user.id
+    try:
+        # Получаем идентификатор пользователя, отправившего сообщение
+        user_id = update.message.from_user.id
 
-    cursor = mydb.cursor()
-    user_data = cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,)).fetchone()
-    cursor.close()
+        cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,))
+        user_data = cursor.fetchone()
 
-    if user_data:
-        referrals_count = user_data[5]
-        referral_code = user_data[6]
-        username = user_data[1] if user_data[1] else "Нет"
-        first_name = user_data[2] if user_data[2] else "Нет"
-        registration_date = user_data[4]
-        referrer_id = user_data[7]
-        reputation = user_data[8]
+        if user_data:
+            referrals_count = user_data[5]
+            referral_code = user_data[6]
+            username = user_data[1] if user_data[1] else "Нет"
+            first_name = user_data[2] if user_data[2] else "Нет"
+            registration_date = user_data[4]
+            referrer_id = user_data[7]
+            reputation = user_data[8]
 
-        # Получаем дату регистрации пользователя
-        registration_date = user_data[4]
-        registration_datetime = datetime.strptime(registration_date, "%Y-%m-%d %H:%M:%S")
+            # Получаем дату регистрации пользователя
+            registration_date = user_data[4]
+            registration_datetime = datetime.strptime(registration_date, "%Y-%m-%d %H:%M:%S")
 
-        # Вычисляем разницу в днях между текущей датой и датой регистрации
-        days_since_registration = (datetime.now() - registration_datetime).days
+            # Вычисляем разницу в днях между текущей датой и датой регистрации
+            days_since_registration = (datetime.now() - registration_datetime).days
 
-        # Получаем информацию о пригласившем пользователе
-        referrer_info = ""
-        referrer_username = "-"
-        if referrer_id:
-            referrer_data = cursor.execute("SELECT first_name, username FROM user_stats WHERE user_id = %s", (referrer_id,)).fetchone()
-            if referrer_data:
-                referrer_name = referrer_data[0]
-                referrer_username = referrer_data[1]
-                referrer_info = f"Вас пригласил: {referrer_name} (@{referrer_username})\n"
+            # Получаем информацию о пригласившем пользователе
+            referrer_info = ""
+            referrer_username = "-"
+            if referrer_id:
+                cursor.execute("SELECT first_name, username FROM user_stats WHERE user_id = %s", (referrer_id,))
+                referrer_data = cursor.fetchone()
+                if referrer_data:
+                    referrer_name = referrer_data[0]
+                    referrer_username = referrer_data[1]
+                    referrer_info = f"Вас пригласил: {referrer_name} (@{referrer_username})\n"
+                else:
+                    referrer_info = "Вас пригласил: -\n"
+                    referrer_username = "-"
+
+            # Получаем количество сообщений пользователя из таблицы user_stats
+            cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,))
+            message_count = cursor.fetchone()[0] or 0
+
+            # Получаем дату последней активности пользователя из таблицы user_stats
+            cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
+            last_activity_date = cursor.fetchone()
+
+            if last_activity_date:
+                last_activity_date_str = last_activity_date[0]  # Преобразуем кортеж в строку
+                last_activity_datetime = datetime.strptime(last_activity_date_str, "%Y-%m-%d %H:%M:%S")
+                last_activity_formatted = last_activity_datetime.strftime("%d.%m.%Y")
             else:
-                referrer_info = "Вас пригласил: -\n"
-                referrer_username = "-"
+                last_activity_formatted = "Нет данных"
 
-        # Получаем количество сообщений пользователя из таблицы user_stats
-        message_count = cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,)).fetchone()
-        message_count = message_count[0] if message_count else 0
+            # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
+            profile_message = f"Имя пользователя: @{username}\nДней в боте: {days_since_registration}\nПоследняя активность: {last_activity_formatted}\nРеферралы: {referrals_count}\nКоличество сообщений: {message_count}\nБаланс: {reputation}\n\n{referrer_info}"
 
-        # Получаем дату последней активности пользователя из таблицы user_stats
-        last_activity_date = cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,)).fetchone()
-
-        # Проверяем, что дата не пустая
-        if last_activity_date:
-            last_activity_date_str = last_activity_date[0]  # Преобразуем кортеж в строку
-
-            # Преобразуем строку в объект datetime
-            last_activity_datetime = datetime.strptime(last_activity_date_str, "%Y-%m-%d %H:%M:%S")
-
-            # Форматируем дату в нужный формат "d.m.Y"
-            last_activity_formatted = last_activity_datetime.strftime("%d.%m.%Y")
+            # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
+            context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id)
         else:
-            last_activity_formatted = "Нет данных"
+            context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
 
-        # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
-        profile_message = f"Имя пользователя: @{username}\nДней в боте: {days_since_registration}\nПоследняя активность: {last_activity_formatted}\nРеферралы: {referrals_count}\nКоличество сообщений: {message_count}\nБаланс: {reputation}\n\n{referrer_info}"
-
-        # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
-        context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id)
-    else:
-        context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
-
+    except mysql.connector.Error as err:
+        print(f"Ошибка MySQL: {err}")
 
 # Функция обработки команды /top
 def top(update, context):
-    cursor = mydb.cursor()
-    # Получаем топ-10 пользователей по количеству репутации
-    cursor.execute("SELECT username, reputation FROM user_stats ORDER BY reputation DESC LIMIT 10")
-    top_users = cursor.fetchall()
-    cursor.close()
+    try:
+        # Получаем топ-10 пользователей по количеству репутации
+        cursor.execute("SELECT username, reputation FROM user_stats ORDER BY reputation DESC LIMIT 10")
+        top_users = cursor.fetchall()
 
-    if top_users:
-        # Формируем сообщение с топ-10 пользователями
-        top_message = "Топ 10 холдеров $AGAVA:\n\n"
-        for index, user in enumerate(top_users, start=1):
-            username = user[0]
-            reputation = user[1]
-            top_message += f"{index}. @{username} - {reputation} $AGAVA\n"
+        if top_users:
+            top_message = "Топ 10 холдеров $AGAVA:\n\n"
+            for index, user in enumerate(top_users, start=1):
+                username = user[0]
+                reputation = user[1]
+                top_message += f"{index}. @{username} - {reputation} $AGAVA\n"
 
-        # Отправляем сообщение с топ-10 пользователями
-        context.bot.send_message(chat_id=update.message.chat_id, text=top_message)
-    else:
-        context.bot.send_message(chat_id=update.message.chat_id, text="Пока нет пользователей с репутацией")
+            context.bot.send_message(chat_id=update.message.chat_id, text=top_message)
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Пока нет пользователей с репутацией")
 
+    except mysql.connector.Error as err:
+        print(f"Ошибка MySQL: {err}")
 
 # Функция обработки команды /give
 def give(update, context):
-    # Получаем ID пользователя, отправившего команду
-    sender_user_id = update.message.from_user.id
+    try:
+        sender_user_id = update.message.from_user.id
 
-    cursor = mydb.cursor()
-    # Получаем количество токенов, которое отправляется
-    if len(context.args) == 1:
-        try:
-            tokens_to_give = int(context.args[0])
-        except ValueError:
-            context.bot.send_message(chat_id=update.message.chat_id, text="Некорректное количество токенов.")
+        if len(context.args) == 1:
+            try:
+                tokens_to_give = int(context.args[0])
+            except ValueError:
+                context.bot.send_message(chat_id=update.message.chat_id, text="Некорректное количество токенов.")
+                return
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Укажите количество токенов для передачи.")
             return
-    else:
-        context.bot.send_message(chat_id=update.message.chat_id, text="Укажите количество токенов для передачи.")
-        return
 
-    # Получаем баланс отправителя
-    cursor.execute("SELECT reputation FROM user_stats WHERE user_id = %s", (sender_user_id,))
-    sender_balance = cursor.fetchone()[0]
+        cursor.execute("SELECT reputation FROM user_stats WHERE user_id = %s", (sender_user_id,))
+        sender_balance = cursor.fetchone()[0]
 
-    # Проверяем, достаточно ли у пользователя баланса для передачи токенов
-    if sender_balance >= tokens_to_give:
-        # Выбираем случайного пользователя для начисления токенов
-        cursor.execute("SELECT user_id, reputation FROM user_stats WHERE user_id != %s", (sender_user_id,))
-        all_users = cursor.fetchall()
-        random_user_id, _ = random.choice(all_users)
+        if sender_balance >= tokens_to_give:
+            cursor.execute("SELECT user_id, reputation FROM user_stats WHERE user_id != %s", (sender_user_id,))
+            all_users = cursor.fetchall()
+            random_user_id, _ = random.choice(all_users)
 
-        # Начисляем токены случайному пользователю
-        cursor.execute("UPDATE user_stats SET reputation = reputation + %s WHERE user_id = %s", (tokens_to_give, random_user_id))
+            cursor.execute("UPDATE user_stats SET reputation = reputation + %s WHERE user_id = %s", (tokens_to_give, random_user_id))
+            cursor.execute("UPDATE user_stats SET reputation = reputation - %s WHERE user_id = %s", (tokens_to_give, sender_user_id))
+            mydb.commit()
 
-        # Списываем токены у отправителя
-        cursor.execute("UPDATE user_stats SET reputation = reputation - %s WHERE user_id = %s", (tokens_to_give, sender_user_id))
-        mydb.commit()
+            cursor.execute("SELECT username FROM user_stats WHERE user_id = %s", (random_user_id,))
+            random_username = cursor.fetchone()[0]
 
-        # Получаем username случайного пользователя
-        cursor.execute("SELECT username FROM user_stats WHERE user_id = %s", (random_user_id,))
-        random_username = cursor.fetchone()[0]
+            sender_username = update.message.from_user.username
+            message_text = f"@{random_username}, вам случайным образом @{sender_username} начислил +{tokens_to_give} $AGAVA"
 
-        # Получаем username пользователя, отправившего команду
-        sender_username = update.message.from_user.username
+            context.bot.send_message(chat_id=update.message.chat_id, text=message_text)
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
 
-        # Формируем сообщение
-        message_text = f"@{random_username}, вам случайным образом @{sender_username} начислил +{tokens_to_give} $AGAVA"
-
-        # Отправляем сообщение
-        context.bot.send_message(chat_id=update.message.chat_id, text=message_text)
-    else:
-        context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
-
-    cursor.close()
-
+    except mysql.connector.Error as err:
+        print(f"Ошибка MySQL: {err}")
 
 # Токен вашего бота
 TOKEN = '6908271386:AAGps8jBks7fxN84EmK7H4OzHRipK4PhJHU'
