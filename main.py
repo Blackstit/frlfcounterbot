@@ -93,7 +93,7 @@ def give(update: Update, context):
 
 
 # Токен вашего бота
-TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+TOKEN = '6908271386:AAGps8jBks7fxN84EmK7H4OzHRipK4PhJHU'
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
