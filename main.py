@@ -89,8 +89,21 @@ def message_handler(update, context):
 def me(update, context):
     # Получаем идентификатор пользователя, отправившего сообщение
     user_id = update.message.from_user.id
+    
+    # Подключение к базе данных MySQL
+    mydb = mysql.connector.connect(
+        host=MYSQL_HOST,
+        user=MYSQL_USER,
+        password=MYSQL_PASSWORD,
+        database=MYSQL_DATABASE,
+        port=MYSQL_PORT
+    )
 
-    user_data = cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
+    cursor = mydb.cursor()
+
+    # Выполняем запрос к базе данных
+    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    user_data = cursor.fetchone()
 
     if user_data:
         referrals_count = user_data[5]
@@ -112,7 +125,8 @@ def me(update, context):
         referrer_info = ""
         referrer_username = "-"
         if referrer_id:
-            referrer_data = cursor.execute("SELECT first_name, username FROM users WHERE id = %s", (referrer_id,)).fetchone()
+            cursor.execute("SELECT first_name, username FROM users WHERE id = %s", (referrer_id,))
+            referrer_data = cursor.fetchone()
             if referrer_data:
                 referrer_name = referrer_data[0]
                 referrer_username = referrer_data[1]
@@ -122,11 +136,12 @@ def me(update, context):
                 referrer_username = "-"
 
         # Получаем количество сообщений пользователя из таблицы user_stats
-        message_count = cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,)).fetchone()
-        message_count = message_count[0] if message_count else 0
+        cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,))
+        message_count = cursor.fetchone()[0] if cursor.rowcount else 0
 
         # Получаем дату последней активности пользователя из таблицы user_stats
-        last_activity_date = cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,)).fetchone()
+        cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
+        last_activity_date = cursor.fetchone()
 
         # Проверяем, что дата не пустая
         if last_activity_date:
@@ -147,6 +162,9 @@ def me(update, context):
         context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id)
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
+
+    cursor.close()
+    mydb.close()
 
 
 # Функция обработки команды /top
