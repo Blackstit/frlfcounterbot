@@ -133,14 +133,12 @@ def me(update, context):
         cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
         last_activity_date_result = cursor.fetchone()
         
-        # Проверяем, что дата не пустая
         if last_activity_date_result:
-            last_activity_date_str = last_activity_date_result[0]  # Преобразуем кортеж в строку
-            last_activity_datetime = datetime.strptime(last_activity_date_str, "%Y-%m-%d %H:%M:%S")
-            last_activity_formatted = last_activity_datetime.strftime("%d.%m.%Y")
-            print(last_activity_formatted)  # Выводим отформатированную дату
+            last_activity_date = last_activity_date_result[0]  # Получаем дату из результата запроса
+        
+            # Преобразуем дату в строку в нужном формате
+            last_activity_formatted = last_activity_date.strftime("%d.%m.%Y %H:%M:%S")
         else:
-            print('Дата не работает')
             last_activity_formatted = "Нет данных"
 
         # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
