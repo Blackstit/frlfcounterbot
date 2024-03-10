@@ -132,12 +132,15 @@ def me(update, context):
         # Получаем дату последней активности пользователя из таблицы user_stats
         cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
         last_activity_date_result = cursor.fetchone()
-
+        
+        # Проверяем, что дата не пустая
         if last_activity_date_result:
-            last_activity_date = last_activity_date_result[0]  # Получаем первую дату из результатов
-            last_activity_date_str = last_activity_date_result[0][0].strftime("%Y-%m-%d %H:%M:%S") if last_activity_date_result[0][0] else None # Преобразуем в строку
-            last_activity_formatted = last_activity_date_str.strftime("%d.%m.%Y")  # Форматируем дату
+            last_activity_date_str = last_activity_date_result[0]  # Преобразуем кортеж в строку
+            last_activity_datetime = datetime.strptime(last_activity_date_str, "%Y-%m-%d %H:%M:%S")
+            last_activity_formatted = last_activity_datetime.strftime("%d.%m.%Y")
+            print(last_activity_formatted)  # Выводим отформатированную дату
         else:
+            print('Дата не работает')
             last_activity_formatted = "Нет данных"
 
         # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
