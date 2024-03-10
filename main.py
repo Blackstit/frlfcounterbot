@@ -1,6 +1,6 @@
 import os
 import mysql.connector
-from telegram.ext import Updater, MessageHandler, CommandHandler
+from telegram.ext import Updater, MessageHandler, CommandHandler, Filters
 from telegram import Update
 from datetime import datetime
 
@@ -61,7 +61,6 @@ def message_handler(update: Update, context):
     # Применяем изменения к базе данных
     mydb.commit()
 
-
 # Функция обработки команды /me
 def me(update: Update, context):
     # Получаем идентификатор пользователя, отправившего сообщение
@@ -79,24 +78,21 @@ def me(update: Update, context):
     # Применяем изменения к базе данных
     mydb.commit()
 
-
 # Функция обработки команды /top
 def top(update: Update, context):
     # ваша логика получения топ-10 пользователей
     pass
-
 
 # Функция обработки команды /give
 def give(update: Update, context):
     # ваша логика передачи токенов пользователям
     pass
 
-
 # Токен вашего бота
 TOKEN = '6908271386:AAGps8jBks7fxN84EmK7H4OzHRipK4PhJHU'
 
 # Создаем объект updater и передаем ему токен вашего бота
-updater = Updater(TOKEN)
+updater = Updater(TOKEN, use_context=True)
 
 # Получаем из него диспетчер сообщений
 dispatcher = updater.dispatcher
