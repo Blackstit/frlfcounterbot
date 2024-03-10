@@ -1,6 +1,7 @@
 import os
 import mysql.connector
-from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
+from telegram.ext import Updater, MessageHandler, CommandHandler
+from telegram import Update
 from datetime import datetime
 
 # Получение значений из переменных окружения
@@ -23,7 +24,7 @@ mydb = mysql.connector.connect(
 cur = mydb.cursor()
 
 # Функция обработки сообщений
-def message_handler(update, context):
+def message_handler(update: Update, context):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     username = update.message.from_user.username
@@ -62,7 +63,7 @@ def message_handler(update, context):
 
 
 # Функция обработки команды /me
-def me(update, context):
+def me(update: Update, context):
     # Получаем идентификатор пользователя, отправившего сообщение
     user_id = update.message.from_user.id
 
@@ -80,13 +81,13 @@ def me(update, context):
 
 
 # Функция обработки команды /top
-def top(update, context):
+def top(update: Update, context):
     # ваша логика получения топ-10 пользователей
     pass
 
 
 # Функция обработки команды /give
-def give(update, context):
+def give(update: Update, context):
     # ваша логика передачи токенов пользователям
     pass
 
