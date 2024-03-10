@@ -135,7 +135,7 @@ def me(update, context):
 
         if last_activity_date_result:
             last_activity_date = last_activity_date_result[0]  # Получаем первую дату из результатов
-            last_activity_date_str = last_activity_date.strftime("%Y-%m-%d %H:%M:%S")  # Преобразуем в строку
+            last_activity_date_str = last_activity_date_result[0][0].strftime("%Y-%m-%d %H:%M:%S") if last_activity_date_result[0][0] else None # Преобразуем в строку
             last_activity_formatted = last_activity_date_str.strftime("%d.%m.%Y")  # Форматируем дату
         else:
             last_activity_formatted = "Нет данных"
