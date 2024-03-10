@@ -81,30 +81,73 @@ def me(update, context):
     # Получаем идентификатор пользователя, отправившего сообщение
     user_id = update.message.from_user.id
 
-    # Выполняем запрос к базе данных
-    cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,))
-    
-    # Получаем данные пользователя
-    user_data = cursor.fetchone()
+    # Получение значений из базы данных MySQL
+    cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    user_data = cur.fetchone()
 
     if user_data:
-        # Проверяем, что кортеж user_data содержит как минимум 6 элементов
-        if len(user_data) >= 6:
-            referrals_count = user_data[5]
-            referral_code = user_data[6]
-            username = user_data[1] if user_data[1] else "Нет"
-            first_name = user_data[2] if user_data[2] else "Нет"
-            registration_date = user_data[4]
-            referrer_id = user_data[7]
-            reputation = user_data[8]
+        referrals_count = user_data[5]
+        referral_code = user_data[6]
+        username = user_data[1] if user_data[1] else "Нет"
+        first_name = user_data[2] if user_data[2] else "Нет"
+        registration_date = user_data[4]
+        referrer_id = user_data[7]
+        reputation = user_data[8]
 
-            # Остальной код здесь...
+        # Получаем дату регистрации пользователя
+        registration_date = user_data[4]
+        registration_datetime = datetime.strptime(registration_date, "%Y-%m-%d %H:%M:%S")
+
+        # Вычисляем разницу в днях между текущей датой и датой регистрации
+        days_since_registration = (datetime.now() - registration_datetime).days
+
+        # Получаем информацию о пригласившем пользователе
+        referrer_info = ""
+        referrer_username = "-"
+        if referrer_id:
+            cur.execute("SELECT first_name, username FROM users WHERE id = %s", (referrer_id,))
+            referrer_data = cur.fetchone()
+            if referrer_data:
+                referrer_name = referrer_data[0]
+                referrer_username = referrer_data[1]
+                referrer_info = f"Вас пригласил: {referrer_name} (@{referrer_username})\n"
+            else:
+                referrer_info = "Вас пригласил: -\n"
+                referrer_username = "-"
+
+        # Получаем количество сообщений пользователя из таблицы user_stats
+        cur.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,))
+        message_count = cur.fetchone()[0] if cur.rowcount > 0 else 0
+
+        # Получаем дату последней активности пользователя из таблицы user_stats
+        cur.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
+        last_activity_date = cur.fetchone()
+
+        # Проверяем, что дата не пустая
+        if last_activity_date:
+            last_activity_date_str = last_activity_date[0]  # Преобразуем кортеж в строку
+
+            # Преобразуем строку в объект datetime
+            last_activity_datetime = datetime.strptime(last_activity_date_str, "%Y-%m-%d %H:%M:%S")
+
+            # Форматируем дату в нужный формат "d.m.Y"
+            last_activity_formatted = last_activity_datetime.strftime("%d.%m.%Y")
         else:
-            context.bot.send_message(chat_id=update.message.chat_id, text="У вас недостаточно данных для отображения профиля.")
-            return
+            last_activity_formatted = "Нет данных"
+
+        # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
+        profile_message = f"Имя пользователя: @{username}\nДней в боте: {days_since_registration}\nПоследняя активность: {last_activity_formatted}\nРеферралы: {referrals_count}\nКоличество сообщений: {message_count}\nБаланс: {reputation}\n\n{referrer_info}"
+
+        # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
+        context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id)
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
 
+    # Применяем изменения к базе данных
+    mydb.commit()
+
+    # Закрываем соединение с базой данных
+    mydb.close()
 
 
 # Функция обработки команды /top
