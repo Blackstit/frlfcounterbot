@@ -1,32 +1,36 @@
-import os
-from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from datetime import datetime
 import mysql.connector
-from dotenv import load_dotenv
+from mysql.connector import Error
+import media
+from telebot import types
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import telebot
 import random
+from datetime import datetime
+import os
 
 # Загрузка переменных окружения из файла .env
 load_dotenv()
 
-# Получение значений из переменных окружения
-MYSQL_HOST = os.getenv('MYSQLHOST')
-MYSQL_USER = os.getenv('MYSQLUSER')
-MYSQL_PASSWORD = os.getenv('MYSQLPASSWORD')
-MYSQL_DATABASE = os.getenv('MYSQLDATABASE')
-MYSQL_PORT = int(os.getenv('MYSQLPORT'))  # Преобразование в целое число
+# Получение переменных окружения
+MYSQL_HOST = os.getenv("MYSQLHOST")
+MYSQL_USER = os.getenv("MYSQLUSER")
+MYSQL_PASSWORD = os.getenv("MYSQLPASSWORD")
+MYSQL_DATABASE = os.getenv("MYSQLDATABASE")
+MYSQL_PORT = os.getenv("MYSQLPORT")
 
-# Подключение к базе данных MySQL
-mydb = mysql.connector.connect(
-    host=MYSQL_HOST,
-    user=MYSQL_USER,
-    password=MYSQL_PASSWORD,
-    database=MYSQL_DATABASE,
-    port=MYSQL_PORT
-)
-
-# Создание объекта cursor для выполнения SQL-запросов
-cursor = mydb.cursor()
+try:
+    mydb = mysql.connector.connect(
+        host=MYSQL_HOST,
+        user=MYSQL_USER,
+        password=MYSQL_PASSWORD,
+        database=MYSQL_DATABASE,
+        port=MYSQL_PORT
+    )
+    cursor = mydb.cursor()
+    print("Connected to MySQL database")
+except Error as e:
+    print("Error connecting to MySQL database:", e)
 
 # Создание таблицы user_stats, если она не существует
 cursor.execute('''CREATE TABLE IF NOT EXISTS user_stats (
@@ -37,7 +41,7 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS user_stats (
                     last_message_date DATETIME
                   )''')
 
-# Функция обработки сообщений
+
 def message_handler(update, context):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
@@ -45,12 +49,13 @@ def message_handler(update, context):
     message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Текущая дата и время
 
     # Проверка, существует ли уже запись о пользователе в базе данных
-    cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,))
+    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     user_data = cursor.fetchone()
 
     if user_data:
         # Если запись о пользователе существует, обновляем количество сообщений и дату последнего сообщения
-        cursor.execute("UPDATE user_stats SET message_count = message_count + 1, last_message_date = %s WHERE user_id = %s", (message_date, user_id,))
+        cursor.execute("UPDATE user_stats SET message_count = message_count + 1, last_message_date = %s WHERE user_id = %s",
+                       (message_date, user_id,))
     else:
         # Если запись о пользователе отсутствует, удаляем сообщение пользователя
         context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
@@ -60,7 +65,6 @@ def message_handler(update, context):
         keyboard = [[InlineKeyboardButton("Зарегистрироваться", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=reply_markup)
-
         return
 
     # Получаем текущее количество сообщений пользователя
@@ -69,8 +73,13 @@ def message_handler(update, context):
 
     # Если количество сообщений кратно 10, начисляем 1 очко репутации
     if message_count % 10 == 0:
+        # Получаем текущее количество очков репутации пользователя
+        cursor.execute("SELECT reputation FROM users WHERE id = %s", (user_id,))
+        reputation = cursor.fetchone()[0]
+
         # Увеличиваем репутацию на 1 и обновляем запись в базе данных
-        cursor.execute("UPDATE user_stats SET reputation = reputation + 1 WHERE user_id = %s", (user_id,))
+        new_reputation = reputation + 1
+        cursor.execute("UPDATE users SET reputation = %s WHERE id = %s", (new_reputation, user_id))
 
     # Применяем изменения к базе данных
     mydb.commit()
@@ -81,9 +90,7 @@ def me(update, context):
     # Получаем идентификатор пользователя, отправившего сообщение
     user_id = update.message.from_user.id
 
-    # Получение значений из базы данных MySQL
-    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-    user_data = cursor.fetchone()
+    user_data = cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
 
     if user_data:
         referrals_count = user_data[5]
@@ -105,8 +112,7 @@ def me(update, context):
         referrer_info = ""
         referrer_username = "-"
         if referrer_id:
-            cursor.execute("SELECT first_name, username FROM users WHERE id = %s", (referrer_id,))
-            referrer_data = cursor.fetchone()
+            referrer_data = cursor.execute("SELECT first_name, username FROM users WHERE id = %s", (referrer_id,)).fetchone()
             if referrer_data:
                 referrer_name = referrer_data[0]
                 referrer_username = referrer_data[1]
@@ -116,12 +122,11 @@ def me(update, context):
                 referrer_username = "-"
 
         # Получаем количество сообщений пользователя из таблицы user_stats
-        cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,))
-        message_count = cursor.fetchone()[0] if cursor.rowcount > 0 else 0
+        message_count = cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,)).fetchone()
+        message_count = message_count[0] if message_count else 0
 
         # Получаем дату последней активности пользователя из таблицы user_stats
-        cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
-        last_activity_date = cursor.fetchone()
+        last_activity_date = cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,)).fetchone()
 
         # Проверяем, что дата не пустая
         if last_activity_date:
@@ -143,17 +148,11 @@ def me(update, context):
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
 
-    # Применяем изменения к базе данных
-    mydb.commit()
-
-    # Закрываем соединение с базой данных
-    mydb.close()
-
 
 # Функция обработки команды /top
 def top(update, context):
     # Получаем топ-10 пользователей по количеству репутации
-    cursor.execute("SELECT username, reputation FROM user_stats ORDER BY reputation DESC LIMIT 10")
+    cursor.execute("SELECT username, reputation FROM users ORDER BY reputation DESC LIMIT 10")
     top_users = cursor.fetchall()
 
     if top_users:
@@ -187,25 +186,25 @@ def give(update, context):
         return
 
     # Получаем баланс отправителя
-    cursor.execute("SELECT reputation FROM user_stats WHERE user_id = %s", (sender_user_id,))
+    cursor.execute("SELECT reputation FROM users WHERE id = %s", (sender_user_id,))
     sender_balance = cursor.fetchone()[0]
 
     # Проверяем, достаточно ли у пользователя баланса для передачи токенов
     if sender_balance >= tokens_to_give:
         # Выбираем случайного пользователя для начисления токенов
-        cursor.execute("SELECT user_id, reputation FROM user_stats WHERE user_id != %s", (sender_user_id,))
+        cursor.execute("SELECT id, reputation FROM users WHERE id != %s", (sender_user_id,))
         all_users = cursor.fetchall()
         random_user_id, _ = random.choice(all_users)
 
         # Начисляем токены случайному пользователю
-        cursor.execute("UPDATE user_stats SET reputation = reputation + %s WHERE user_id = %s", (tokens_to_give, random_user_id))
+        cursor.execute("UPDATE users SET reputation = reputation + %s WHERE id = %s", (tokens_to_give, random_user_id))
 
         # Списываем токены у отправителя
-        cursor.execute("UPDATE user_stats SET reputation = reputation - %s WHERE user_id = %s", (tokens_to_give, sender_user_id))
+        cursor.execute("UPDATE users SET reputation = reputation - %s WHERE id = %s", (tokens_to_give, sender_user_id))
         mydb.commit()
 
         # Получаем username случайного пользователя
-        cursor.execute("SELECT username FROM user_stats WHERE user_id = %s", (random_user_id,))
+        cursor.execute("SELECT username FROM users WHERE id = %s", (random_user_id,))
         random_username = cursor.fetchone()[0]
 
         # Получаем username пользователя, отправившего команду
@@ -221,7 +220,7 @@ def give(update, context):
 
 
 # Токен вашего бота
-TOKEN = '6908271386:AAGps8jBks7fxN84EmK7H4OzHRipK4PhJHU'
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
