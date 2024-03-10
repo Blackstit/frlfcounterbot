@@ -1,6 +1,5 @@
 import mysql.connector
 from mysql.connector import Error
-import media
 from telebot import types
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
