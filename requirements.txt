@@ -1,5 +1,2 @@
-telebot
-sqlite3
-datetime
-random
-string
+pyTelegramBotAPI
+mysql-connector-python
