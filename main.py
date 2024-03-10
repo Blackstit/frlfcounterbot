@@ -10,11 +10,11 @@ import random
 load_dotenv()
 
 # Получение значений из переменных окружения
-MYSQL_HOST = os.getenv('MYSQL_HOST')
-MYSQL_USER = os.getenv('MYSQL_USER')
-MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
-MYSQL_DATABASE = os.getenv('MYSQL_DATABASE')
-MYSQL_PORT = int(os.getenv('MYSQL_PORT'))  # Преобразование в целое число
+MYSQL_HOST = os.getenv('MYSQLHOST')
+MYSQL_USER = os.getenv('MYSQLUSER')
+MYSQL_PASSWORD = os.getenv('MYSQLPASSWORD')
+MYSQL_DATABASE = os.getenv('MYSQLDATABASE')
+MYSQL_PORT = int(os.getenv('MYSQLPORT'))  # Преобразование в целое число
 
 # Подключение к базе данных MySQL
 mydb = mysql.connector.connect(
