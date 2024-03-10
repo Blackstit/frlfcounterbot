@@ -105,10 +105,12 @@ def me(update, context):
 
         # Получаем дату регистрации пользователя
         registration_date = user_data[4]
+        print("Registration date from database:", registration_date)
         registration_datetime = datetime.strptime(registration_date, "%Y-%m-%d %H:%M:%S")
 
         # Вычисляем разницу в днях между текущей датой и датой регистрации
         days_since_registration = (datetime.now() - registration_datetime).days
+
 
         # Получаем информацию о пригласившем пользователе
         referrer_info = ""
