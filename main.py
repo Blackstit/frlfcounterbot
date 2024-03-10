@@ -81,7 +81,11 @@ def me(update, context):
     # Получаем идентификатор пользователя, отправившего сообщение
     user_id = update.message.from_user.id
 
-    user_data = cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,)).fetchone()
+    # Выполняем запрос к базе данных
+    cursor.execute("SELECT * FROM user_stats WHERE user_id = %s", (user_id,))
+    
+    # Получаем данные пользователя
+    user_data = cursor.fetchone()
 
     if user_data:
         # Проверяем, что кортеж user_data содержит как минимум 6 элементов
@@ -100,6 +104,7 @@ def me(update, context):
             return
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
+
 
 
 # Функция обработки команды /top
