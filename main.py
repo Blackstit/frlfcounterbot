@@ -82,8 +82,8 @@ def me(update, context):
     user_id = update.message.from_user.id
 
     # Получение значений из базы данных MySQL
-    cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-    user_data = cur.fetchone()
+    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    user_data = cursor.fetchone()
 
     if user_data:
         referrals_count = user_data[5]
@@ -105,8 +105,8 @@ def me(update, context):
         referrer_info = ""
         referrer_username = "-"
         if referrer_id:
-            cur.execute("SELECT first_name, username FROM users WHERE id = %s", (referrer_id,))
-            referrer_data = cur.fetchone()
+            cursor.execute("SELECT first_name, username FROM users WHERE id = %s", (referrer_id,))
+            referrer_data = cursor.fetchone()
             if referrer_data:
                 referrer_name = referrer_data[0]
                 referrer_username = referrer_data[1]
@@ -116,12 +116,12 @@ def me(update, context):
                 referrer_username = "-"
 
         # Получаем количество сообщений пользователя из таблицы user_stats
-        cur.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,))
-        message_count = cur.fetchone()[0] if cur.rowcount > 0 else 0
+        cursor.execute("SELECT message_count FROM user_stats WHERE user_id = %s", (user_id,))
+        message_count = cursor.fetchone()[0] if cursor.rowcount > 0 else 0
 
         # Получаем дату последней активности пользователя из таблицы user_stats
-        cur.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
-        last_activity_date = cur.fetchone()
+        cursor.execute("SELECT last_message_date FROM user_stats WHERE user_id = %s ORDER BY last_message_date DESC LIMIT 1", (user_id,))
+        last_activity_date = cursor.fetchone()
 
         # Проверяем, что дата не пустая
         if last_activity_date:
