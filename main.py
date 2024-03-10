@@ -1,6 +1,6 @@
 import os
 import mysql.connector
-from telegram.ext import Updater, MessageHandler, CommandHandler, Filters
+from telegram.ext import Updater, MessageHandler, CommandHandler
 from telegram import Update
 from datetime import datetime
 
@@ -98,7 +98,7 @@ updater = Updater(TOKEN, use_context=True)
 dispatcher = updater.dispatcher
 
 # Регистрируем обработчик сообщений для конкретного чата
-dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), message_handler))
+dispatcher.add_handler(MessageHandler(filter.Filters.text & (~filter.Filters.command), message_handler))
 
 # Регистрируем обработчик команды /me
 me_handler = CommandHandler('me', me)
