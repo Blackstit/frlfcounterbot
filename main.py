@@ -38,18 +38,6 @@ load_dotenv()
 MONGO_URL = os.getenv("MONGO_URL")
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-# Подключение к MongoDB
-client = pymongo.MongoClient(MONGO_URL)
-db = client['test']  # Замените 'your_database_name' на имя вашей базы данных
-
-# Проверяем, существует ли коллекция, и создаем ее, если она отсутствует
-if 'users_stats' not in db.list_collection_names():
-    db.create_collection('users_stats')
-users_stats_collection = db['users_stats']  # Коллекция для статистики пользователей
-
-users_collection = db['users'] # Коллекция для  пользователей
-
-
 def message_handler(update, context):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
@@ -69,9 +57,9 @@ def message_handler(update, context):
                 # Если записи о пользователе нет, создаем новую запись
                 new_user_stats_data = {
                     'user_id': user_id,
+                    'username': username,  # Сохраняем имя пользователя
                     'message_count': 1,
-                    'last_message_date': message_date,
-                    'reputation': 0  # Можно добавить другие поля по необходимости
+                    'last_message_date': message_date
                 }
                 users_stats_collection.insert_one(new_user_stats_data)
             else:
@@ -90,6 +78,9 @@ def message_handler(update, context):
             keyboard = [[InlineKeyboardButton("Зарегистрироваться", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=reply_markup)
+    except Exception as e:
+        print("Error handling message:", e)
+
 
     except Exception as e:
         print("Error handling message:", e)
