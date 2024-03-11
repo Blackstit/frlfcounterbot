@@ -134,7 +134,7 @@ def top(update, context):
             for index, user in enumerate(top_users, start=1):
                 username = user.get('username', 'Нет')
                 reputation = user.get('reputation', 0)
-                top_message += f"{index}. @{username} - {reputation} $AGAVA\n"
+                top_message += f"{index}. @{username} - {reputation} $FRFL\n"
 
             # Отправляем сообщение с топ-10 пользователями
             context.bot.send_message(chat_id=update.message.chat_id, text=top_message)
@@ -142,6 +142,65 @@ def top(update, context):
             context.bot.send_message(chat_id=update.message.chat_id, text="Пока нет пользователей с репутацией")
     except Exception as e:
         print("Error handling /top command:", e)
+
+# Функция обработки команды /give
+def give(update, context):
+    try:
+        # Получаем ID пользователя, отправившего команду
+        sender_user_id = update.message.from_user.id
+
+        # Получаем количество токенов, которое отправляется
+        if len(context.args) == 1:
+            try:
+                tokens_to_give = int(context.args[0])
+            except ValueError:
+                context.bot.send_message(chat_id=update.message.chat_id, text="Некорректное количество токенов.")
+                return
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Укажите количество токенов для передачи.")
+            return
+
+        # Получаем баланс отправителя из коллекции users
+        sender_data = users_collection.find_one({'id': sender_user_id})
+        if sender_data:
+            sender_balance = sender_data.get('reputation', 0)
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Вы не зарегистрированы.")
+            return
+
+        # Проверяем, достаточно ли у пользователя баланса для передачи токенов
+        if sender_balance >= tokens_to_give:
+            # Выбираем случайного пользователя для начисления токенов
+            random_user = users_collection.aggregate([{"$match": {"id": {"$ne": sender_user_id}}},
+                                                      {"$sample": {"size": 1}}])
+            random_user_data = list(random_user)
+            if random_user_data:
+                random_user_id = random_user_data[0]['id']
+
+                # Начисляем токены случайному пользователю
+                users_collection.update_one({"id": random_user_id}, {"$inc": {"reputation": tokens_to_give}})
+
+                # Списываем токены у отправителя
+                users_collection.update_one({"id": sender_user_id}, {"$inc": {"reputation": -tokens_to_give}})
+                
+                # Получаем username случайного пользователя
+                random_username = random_user_data[0].get('username', 'Нет')
+
+                # Получаем username пользователя, отправившего команду
+                sender_username = update.message.from_user.username
+
+                # Формируем сообщение
+                message_text = f"@{random_username}, вам случайным образом @{sender_username} начислил +{tokens_to_give} $FRFL"
+
+                # Отправляем сообщение
+                context.bot.send_message(chat_id=update.message.chat_id, text=message_text)
+            else:
+                context.bot.send_message(chat_id=update.message.chat_id, text="Не удалось выбрать случайного пользователя.")
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
+    except Exception as e:
+        print("Error handling /give command:", e)
+
 
 
 # Создаем объект updater и передаем ему токен вашего бота
@@ -160,6 +219,10 @@ dispatcher.add_handler(me_handler)
 # Регистрируем обработчик команды /top
 top_handler = CommandHandler('top', top)
 dispatcher.add_handler(top_handler)
+
+# Регистрируем обработчик команды /give
+give_handler = CommandHandler('give', give)
+dispatcher.add_handler(give_handler)
 
 # Запускаем бота
 updater.start_polling()
