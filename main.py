@@ -24,6 +24,32 @@ users_stats_collection = db['users_stats']  # Коллекция для стат
 users_collection = db['users'] # Коллекция для  пользователей
 
 
+import pymongo
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+# Загрузка переменных окружения из файла .env
+load_dotenv()
+
+# Получение переменных окружения для подключения к MongoDB
+MONGO_URL = os.getenv("MONGO_URL")
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+# Подключение к MongoDB
+client = pymongo.MongoClient(MONGO_URL)
+db = client['test']  # Замените 'your_database_name' на имя вашей базы данных
+
+# Проверяем, существует ли коллекция, и создаем ее, если она отсутствует
+if 'users_stats' not in db.list_collection_names():
+    db.create_collection('users_stats')
+users_stats_collection = db['users_stats']  # Коллекция для статистики пользователей
+
+users_collection = db['users'] # Коллекция для  пользователей
+
+
 # Функция для обработки сообщений пользователя
 def message_handler(update, context):
     chat_id = update.message.chat_id
