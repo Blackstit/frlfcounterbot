@@ -193,8 +193,12 @@ def rain(update, context):
                 # Списываем токены у отправителя
                 users_collection.update_one({"id": sender_user_id}, {"$inc": {"reputation": -tokens_to_give}})
 
+                # Получаем имена пользователей-получателей
+                recipient_usernames = [f"@{user['username']}" for user in all_users]
+
                 # Формируем сообщение об успешной раздаче
-                message_text = f"Раздача токенов завершена. Вы раздали {tokens_to_give} токенов между {num_recipients} пользователями."
+                recipients_message = ', '.join(recipient_usernames)
+                message_text = f"Раздача токенов завершена. @{sender_data['username']} раздал {tokens_to_give} токенов между {num_recipients} пользователями: {recipients_message}."
 
                 # Отправляем сообщение
                 context.bot.send_message(chat_id=update.message.chat_id, text=message_text)
@@ -204,6 +208,7 @@ def rain(update, context):
             context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
     except Exception as e:
         print("Error handling /rain command:", e)
+
 
 
 # Создаем объект updater и передаем ему токен вашего бота
