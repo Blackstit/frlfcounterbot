@@ -234,7 +234,7 @@ def help_command(update, context):
             commands_list.append(f"{command_name}: {command_description}")
 
         # Собираем все команды в одну строку
-        commands_text = "\n".join(commands_list)
+        commands_text = "\n\n".join(commands_list)
 
         # Формируем итоговое сообщение
         final_message = welcome_message + commands_text
