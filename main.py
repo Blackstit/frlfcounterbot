@@ -56,6 +56,7 @@ def message_handler(update, context):
         # Если запись о пользователе существует, обновляем количество сообщений и дату последнего сообщения
         cursor.execute("UPDATE user_stats SET message_count = message_count + 1, last_message_date = %s WHERE user_id = %s",
                        (message_date, user_id,))
+        mydb.commit()
     else:
         # Если запись о пользователе отсутствует, удаляем сообщение пользователя
         context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
@@ -152,6 +153,8 @@ def me(update, context):
         context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id)
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
+
+    mydb.commit()
 
 
 # Токен вашего бота
