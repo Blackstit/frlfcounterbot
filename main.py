@@ -177,7 +177,7 @@ def rain(update, context):
             all_users = users_collection.find({"id": {"$ne": sender_user_id}})
 
             # Считаем количество получателей
-            num_recipients = all_users.count()
+            num_recipients = users_collection.count_documents({"id": {"$ne": sender_user_id}})
 
             # Проверяем, что есть хотя бы один получатель
             if num_recipients > 0:
@@ -204,8 +204,6 @@ def rain(update, context):
             context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
     except Exception as e:
         print("Error handling /rain command:", e)
-
-
 
 
 # Создаем объект updater и передаем ему токен вашего бота
