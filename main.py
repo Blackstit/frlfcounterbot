@@ -263,11 +263,10 @@ def stats_command(update, context):
 
         # Формируем текст статистики
         stats_message = (
-            "*Статистика FireFly Community*\n\n"
-            "*Всего пользователей в чате*: Не удалось получить эту информацию\n"
-            f"*Всего пользователей в боте*: {total_users_count}\n"
-            f"*Отправлено сообщений*: {total_messages_count}\n"
-            f"*Всего заработано*: {total_tokens_earned}\n"
+            "Статистика FireFly Community\n\n"
+            f"*Всего пользователей в боте*: {total_users_count}\n\n"
+            f"*Отправлено сообщений*: {total_messages_count}\n\n"
+            f"*Всего заработано*: {total_tokens_earned}\n\n"
             f"*Выполнено заданий*: {total_tasks_completed}"
         )
 
