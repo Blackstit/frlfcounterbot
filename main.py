@@ -86,36 +86,42 @@ def message_handler(update, context):
         print("Error handling message:", e)
 
 
-# Функция для обработки команды /me
 def me(update, context):
     try:
         # Получаем идентификатор пользователя, отправившего сообщение
         user_id = update.message.from_user.id
 
-        # Получаем данные пользователя из базы данных
+        # Получаем данные пользователя из коллекции users
         user_data = users_collection.find_one({'id': user_id})
 
         if user_data:
-            referrals_count = user_data.get('referrals_count', 0)
-            reputation = user_data.get('reputation', 0)
-            username = user_data.get('username', 'Нет')
-            message_count = user_data.get('message_count', 0)
-            last_activity_date = user_data.get('last_message_date', 'Нет данных')
+            # Получаем данные о пользователе из коллекции users_stats
+            user_stats_data = users_stats_collection.find_one({'user_id': user_id})
 
-            # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
-            profile_message = f"Имя пользователя: @{username}\nКоличество сообщений: {message_count}\nРепутация: {reputation}\nПоследняя активность: {last_activity_date}"
+            # Если данные о пользователе есть в users_stats, используем их
+            if user_stats_data:
+                username = user_stats_data.get('username', 'Нет')
+                message_count = user_stats_data.get('message_count', 0)
+                last_activity_date = user_stats_data.get('last_message_date', 'Нет данных')
+                reputation = user_data.get('reputation', 0)
 
-            # Создаем инлайн клавиатуру с кнопкой "Открыть бот"
-            keyboard = [[InlineKeyboardButton("Открыть бот 🤖", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
+                # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
+                profile_message = f"Имя пользователя: @{username}\nКоличество сообщений: {message_count}\nРепутация: {reputation}\nПоследняя активность: {last_activity_date}"
 
-            # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
-            context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+                # Создаем инлайн клавиатуру с кнопкой "Открыть бот"
+                keyboard = [[InlineKeyboardButton("Открыть бот 🤖", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+
+                # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
+                context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+            else:
+                context.bot.send_message(chat_id=update.message.chat_id, text="Данные пользователя отсутствуют", reply_to_message_id=update.message.message_id)
         else:
             context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
 
     except Exception as e:
         print("Error handling /me command:", e)
+
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
