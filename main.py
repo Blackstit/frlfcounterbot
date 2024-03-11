@@ -16,6 +16,7 @@ TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 client = pymongo.MongoClient(MONGO_URL)
 db = client['test']  # Замените 'your_database_name' на имя вашей базы данных
 users_stats_collection = db['users_stats']  # Коллекция для статистики пользователей
+users_collection = db['users'] # Коллекция для  пользователей
 
 # Функция для обработки сообщений пользователя
 def message_handler(update, context):
@@ -26,7 +27,7 @@ def message_handler(update, context):
 
     try:
         # Проверка, существует ли уже запись о пользователе в базе данных
-        user_data = users_stats_collection.find_one({'user_id': user_id})
+        user_data = users_collection.find_one({'id': user_id})
 
         if user_data:
             # Если запись о пользователе существует, обновляем количество сообщений и дату последнего сообщения
