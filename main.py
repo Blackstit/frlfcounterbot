@@ -122,6 +122,27 @@ def me(update, context):
     except Exception as e:
         print("Error handling /me command:", e)
 
+# Функция обработки команды /top
+def top(update, context):
+    try:
+        # Получаем топ-10 пользователей по количеству репутации
+        top_users = users_collection.find().sort("reputation", pymongo.DESCENDING).limit(10)
+
+        if top_users:
+            # Формируем сообщение с топ-10 пользователями
+            top_message = "Топ 10 холдеров $AGAVA:\n\n"
+            for index, user in enumerate(top_users, start=1):
+                username = user.get('username', 'Нет')
+                reputation = user.get('reputation', 0)
+                top_message += f"{index}. @{username} - {reputation} $AGAVA\n"
+
+            # Отправляем сообщение с топ-10 пользователями
+            context.bot.send_message(chat_id=update.message.chat_id, text=top_message)
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Пока нет пользователей с репутацией")
+    except Exception as e:
+        print("Error handling /top command:", e)
+
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
