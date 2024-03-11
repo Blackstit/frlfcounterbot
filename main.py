@@ -157,6 +157,10 @@ dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), message
 me_handler = CommandHandler('me', me)
 dispatcher.add_handler(me_handler)
 
+# Регистрируем обработчик команды /top
+top_handler = CommandHandler('top', top)
+dispatcher.add_handler(top_handler)
+
 # Запускаем бота
 updater.start_polling()
 updater.idle()
