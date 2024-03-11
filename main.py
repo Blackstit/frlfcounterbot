@@ -245,6 +245,36 @@ def help_command(update, context):
     except Exception as e:
         print("Error handling /help command:", e)
 
+def stats_command(update, context):
+    try:
+        # Получаем количество пользователей в боте
+        total_users_count = users_collection.count_documents({})
+
+        # Получаем количество сообщений
+        total_messages_count = users_stats_collection.aggregate([{"$group": {"_id": None, "total": {"$sum": "$message_count"}}}])
+        total_messages_count = list(total_messages_count)[0]['total'] if total_messages_count else 0
+
+        # Получаем суммарное количество токенов всех пользователей
+        total_tokens_earned = sum(user.get('reputation', 0) for user in users_collection.find({}))
+
+        # Получаем сумму всех выполненных заданий
+        total_tasks_completed = tasks_collection.count_documents({})
+
+        # Формируем текст статистики
+        stats_message = (
+            "*Статистика FireFly Community*\n\n"
+            "*Всего пользователей в чате*: Не удалось получить эту информацию\n"
+            f"*Всего пользователей в боте*: {total_users_count}\n"
+            f"*Отправлено сообщений*: {total_messages_count}\n"
+            f"*Всего заработано*: {total_tokens_earned}\n"
+            f"*Выполнено заданий*: {total_tasks_completed}"
+        )
+
+        # Отправляем сообщение с статистикой
+        context.bot.send_message(chat_id=update.message.chat_id, text=stats_message, parse_mode="Markdown", reply_to_message_id=update.message.message_id)
+
+    except Exception as e:
+        print("Error handling /stats command:", e)
 
 
 # Создаем объект updater и передаем ему токен вашего бота
@@ -271,6 +301,10 @@ dispatcher.add_handler(rain_handler)
 # Регистрируем обработчик команды /help
 help_handler = CommandHandler('help', help_command)
 dispatcher.add_handler(help_handler)
+
+# Регистрируем обработчик команды /stats
+stats_handler = CommandHandler('stats', stats_command)
+dispatcher.add_handler(stats_handler)
 
 # Запускаем бота
 updater.start_polling()
