@@ -23,6 +23,7 @@ users_stats_collection = db['users_stats']  # Коллекция для стат
 
 users_collection = db['users'] # Коллекция для  пользователей
 commands_collection = db['commands']  # Коллекция для статистики пользователей
+tasks_collection = db['completed_tasks'] # Коллекция для выполненных заданий
 
 
 import pymongo
