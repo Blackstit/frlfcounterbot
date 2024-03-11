@@ -15,7 +15,7 @@ TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 # Подключение к MongoDB
 client = pymongo.MongoClient(MONGO_URL)
 db = client['test']  # Замените 'your_database_name' на имя вашей базы данных
-user_stats_collection = db['user_stats']  # Коллекция для статистики пользователей
+users_stats_collection = db['users_stats']  # Коллекция для статистики пользователей
 
 # Функция для обработки сообщений пользователя
 def message_handler(update, context):
@@ -26,11 +26,11 @@ def message_handler(update, context):
 
     try:
         # Проверка, существует ли уже запись о пользователе в базе данных
-        user_data = user_stats_collection.find_one({'user_id': user_id})
+        user_data = users_stats_collection.find_one({'user_id': user_id})
 
         if user_data:
             # Если запись о пользователе существует, обновляем количество сообщений и дату последнего сообщения
-            user_stats_collection.update_one(
+            users_stats_collection.update_one(
                 {'user_id': user_id},
                 {'$inc': {'message_count': 1}, '$set': {'last_message_date': message_date}}
             )
@@ -46,14 +46,14 @@ def message_handler(update, context):
             return
 
         # Получаем текущее количество сообщений пользователя
-        user_data = user_stats_collection.find_one({'user_id': user_id})
+        user_data = users_stats_collection.find_one({'user_id': user_id})
         if user_data:
             message_count = user_data.get('message_count', 0)
 
             # Если количество сообщений кратно 10, начисляем 1 очко репутации
             if message_count % 10 == 0:
                 # Увеличиваем репутацию на 1 и обновляем запись в базе данных
-                user_stats_collection.update_one(
+                users_stats_collection.update_one(
                     {'user_id': user_id},
                     {'$inc': {'reputation': 1}}
                 )
@@ -68,7 +68,7 @@ def me(update, context):
         user_id = update.message.from_user.id
 
         # Получаем данные пользователя из базы данных
-        user_data = user_stats_collection.find_one({'user_id': user_id})
+        user_data = users_stats_collection.find_one({'user_id': user_id})
 
         if user_data:
             referrals_count = user_data.get('referrals_count', 0)
