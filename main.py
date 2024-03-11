@@ -152,10 +152,14 @@ def me(update, context):
             # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
             profile_message = f"Имя пользователя: @{username}\nДней в боте: {days_since_registration}\nПоследняя активность: {last_activity_formatted}\nРеферралы: {referrals_count}\nКоличество сообщений: {message_count}\nБаланс: {reputation}\n\n{referrer_info}"
 
+             # Создаем инлайн клавиатуру с кнопкой "Открыть бот"
+            keyboard = [[InlineKeyboardButton("Открыть бот 🤖", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
             # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
-            context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id)
+            context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
         else:
-            context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы")
+            context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
 
         mydb.commit()
     except Error as e:
