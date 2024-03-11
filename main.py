@@ -22,6 +22,7 @@ if 'users_stats' not in db.list_collection_names():
 users_stats_collection = db['users_stats']  # Коллекция для статистики пользователей
 
 users_collection = db['users'] # Коллекция для  пользователей
+commands_collection = db['commands']  # Коллекция для статистики пользователей
 
 
 import pymongo
@@ -209,6 +210,40 @@ def rain(update, context):
     except Exception as e:
         print("Error handling /rain command:", e)
 
+def help_command(update, context):
+    try:
+        # Получаем ID пользователя, отправившего команду
+        user_id = update.message.from_user.id
+
+        # Формируем сообщение приветствия
+        welcome_message = ("Привет, я бот FireFly Crypto!\n\n"
+                           "Я создан для того, чтобы наше с вами сообщество развивалось, "
+                           "пользователи богатели, а в чате был порядок.\n\n"
+                           "Просто общайся в чате, не нарушай наши правила и за каждое твое сообщение "
+                           "я буду тебе платить токенами $FRFL.\n\n"
+                           "Вот основные команды, которые тебе стоит знать:\n\n")
+
+        # Получаем список всех команд из коллекции commands
+        commands = commands_collection.find({})
+
+        # Формируем список команд и их описаний
+        commands_list = []
+        for command in commands:
+            command_name = command.get('command_name', '')
+            command_description = command.get('command_description', '')
+            commands_list.append(f"{command_name}: {command_description}")
+
+        # Собираем все команды в одну строку
+        commands_text = "\n".join(commands_list)
+
+        # Формируем итоговое сообщение
+        final_message = welcome_message + commands_text
+
+        # Отправляем сообщение
+        context.bot.send_message(chat_id=update.message.chat_id, text=final_message, reply_to_message_id=update.message.message_id)
+
+    except Exception as e:
+        print("Error handling /help command:", e)
 
 
 
@@ -232,6 +267,10 @@ dispatcher.add_handler(top_handler)
 # Регистрируем обработчик команды /rain
 rain_handler = CommandHandler('rain', rain)
 dispatcher.add_handler(rain_handler)
+
+# Регистрируем обработчик команды /help
+help_handler = CommandHandler('help', help_command)
+dispatcher.add_handler(help_handler)
 
 # Запускаем бота
 updater.start_polling()
