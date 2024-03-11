@@ -130,7 +130,7 @@ def top(update, context):
 
         if top_users:
             # Формируем сообщение с топ-10 пользователями
-            top_message = "Топ 10 холдеров $AGAVA:\n\n"
+            top_message = "Топ 10 холдеров $FRFL:\n\n"
             for index, user in enumerate(top_users, start=1):
                 username = user.get('username', 'Нет')
                 reputation = user.get('reputation', 0)
