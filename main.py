@@ -143,8 +143,8 @@ def top(update, context):
     except Exception as e:
         print("Error handling /top command:", e)
 
-# Функция обработки команды /give
-def give(update, context):
+# Функция обработки команды /rain
+def rain(update, context):
     try:
         # Получаем ID пользователя, отправившего команду
         sender_user_id = update.message.from_user.id
@@ -153,12 +153,15 @@ def give(update, context):
         if len(context.args) == 1:
             try:
                 tokens_to_give = int(context.args[0])
+                if tokens_to_give <= 0:
+                    context.bot.send_message(chat_id=update.message.chat_id, text="Количество токенов должно быть больше нуля.")
+                    return
             except ValueError:
                 context.bot.send_message(chat_id=update.message.chat_id, text="Некорректное количество токенов.")
                 return
         else:
-            context.bot.send_message(chat_id=update.message.chat_id, text="Укажите количество токенов для передачи.")
-            return
+            # Устанавливаем значение по умолчанию, если пользователь не указал количество токенов
+            tokens_to_give = 10
 
         # Получаем баланс отправителя из коллекции users
         sender_data = users_collection.find_one({'id': sender_user_id})
@@ -168,38 +171,40 @@ def give(update, context):
             context.bot.send_message(chat_id=update.message.chat_id, text="Вы не зарегистрированы.")
             return
 
-        # Проверяем, достаточно ли у пользователя баланса для передачи токенов
+        # Проверяем, достаточно ли у пользователя баланса для раздачи токенов
         if sender_balance >= tokens_to_give:
-            # Выбираем случайного пользователя для начисления токенов
-            random_user = users_collection.aggregate([{"$match": {"id": {"$ne": sender_user_id}}},
-                                                      {"$sample": {"size": 1}}])
-            random_user_data = list(random_user)
-            if random_user_data:
-                random_user_id = random_user_data[0]['id']
+            # Получаем список всех пользователей, кроме отправителя
+            all_users = users_collection.find({"id": {"$ne": sender_user_id}})
 
-                # Начисляем токены случайному пользователю
-                users_collection.update_one({"id": random_user_id}, {"$inc": {"reputation": tokens_to_give}})
+            # Считаем количество получателей
+            num_recipients = all_users.count()
+
+            # Проверяем, что есть хотя бы один получатель
+            if num_recipients > 0:
+                # Рассчитываем количество токенов для каждого получателя
+                tokens_per_recipient = tokens_to_give / num_recipients
+
+                # Начисляем токены каждому получателю
+                for user in all_users:
+                    recipient_id = user['id']
+                    # Начисляем токены пользователю
+                    users_collection.update_one({"id": recipient_id}, {"$inc": {"reputation": tokens_per_recipient}})
 
                 # Списываем токены у отправителя
                 users_collection.update_one({"id": sender_user_id}, {"$inc": {"reputation": -tokens_to_give}})
-                
-                # Получаем username случайного пользователя
-                random_username = random_user_data[0].get('username', 'Нет')
 
-                # Получаем username пользователя, отправившего команду
-                sender_username = update.message.from_user.username
-
-                # Формируем сообщение
-                message_text = f"@{random_username}, вам случайным образом @{sender_username} начислил +{tokens_to_give} $FRFL"
+                # Формируем сообщение об успешной раздаче
+                message_text = f"Раздача токенов завершена. Вы раздали {tokens_to_give} токенов между {num_recipients} пользователями."
 
                 # Отправляем сообщение
                 context.bot.send_message(chat_id=update.message.chat_id, text=message_text)
             else:
-                context.bot.send_message(chat_id=update.message.chat_id, text="Не удалось выбрать случайного пользователя.")
+                context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно пользователей для раздачи.")
         else:
             context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
     except Exception as e:
-        print("Error handling /give command:", e)
+        print("Error handling /rain command:", e)
+
 
 
 
@@ -220,9 +225,9 @@ dispatcher.add_handler(me_handler)
 top_handler = CommandHandler('top', top)
 dispatcher.add_handler(top_handler)
 
-# Регистрируем обработчик команды /give
-give_handler = CommandHandler('give', give)
-dispatcher.add_handler(give_handler)
+# Регистрируем обработчик команды /rain
+rain_handler = CommandHandler('rain', rain)
+dispatcher.add_handler(rain_handler)
 
 # Запускаем бота
 updater.start_polling()
