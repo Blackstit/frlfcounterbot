@@ -69,7 +69,7 @@ def me(update, context):
         user_id = update.message.from_user.id
 
         # Получаем данные пользователя из базы данных
-        user_data = users_stats_collection.find_one({'user_id': user_id})
+        user_data = users_collection.find_one({'id': user_id})
 
         if user_data:
             referrals_count = user_data.get('referrals_count', 0)
