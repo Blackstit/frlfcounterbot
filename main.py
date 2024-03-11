@@ -3,17 +3,14 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 # Загрузка переменных окружения из файла .env
 load_dotenv()
 
 # Получение переменных окружения для подключения к MongoDB
-MONGO_HOST = os.getenv("MONGOHOST")
-MONGO_USER = os.getenv("MONGOUSER")
-MONGO_PASSWORD = os.getenv("MONGOPASSWORD")
-MONGO_PORT = int(os.getenv("MONGOPORT"))
 MONGO_URL = os.getenv("MONGO_URL")
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 # Подключение к MongoDB
 client = pymongo.MongoClient(MONGO_URL)
@@ -94,9 +91,6 @@ def me(update, context):
 
     except Exception as e:
         print("Error handling /me command:", e)
-
-# Токен вашего бота
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
