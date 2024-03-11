@@ -50,7 +50,6 @@ users_stats_collection = db['users_stats']  # Коллекция для стат
 users_collection = db['users'] # Коллекция для  пользователей
 
 
-# Функция для обработки сообщений пользователя
 def message_handler(update, context):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
@@ -58,17 +57,32 @@ def message_handler(update, context):
     message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Текущая дата и время
 
     try:
-        # Проверка, существует ли уже запись о пользователе в базе данных
+        # Проверяем, существует ли запись о пользователе в коллекции users
         user_data = users_collection.find_one({'id': user_id})
 
         if user_data:
-            # Если запись о пользователе существует, обновляем количество сообщений и дату последнего сообщения
-            users_stats_collection.update_one(
-                {'user_id': user_id},
-                {'$inc': {'message_count': 1}, '$set': {'last_message_date': message_date}}
-            )
+            # Пользователь зарегистрирован в боте
+            # Проверяем, существует ли запись о пользователе в коллекции users_stats
+            user_stats_data = users_stats_collection.find_one({'user_id': user_id})
+
+            if not user_stats_data:
+                # Если записи о пользователе нет, создаем новую запись
+                new_user_stats_data = {
+                    'user_id': user_id,
+                    'message_count': 1,
+                    'last_message_date': message_date,
+                    'reputation': 0  # Можно добавить другие поля по необходимости
+                }
+                users_stats_collection.insert_one(new_user_stats_data)
+            else:
+                # Если запись о пользователе уже существует, обновляем количество сообщений и дату последнего сообщения
+                users_stats_collection.update_one(
+                    {'user_id': user_id},
+                    {'$inc': {'message_count': 1}, '$set': {'last_message_date': message_date}}
+                )
         else:
-            # Если запись о пользователе отсутствует, удаляем сообщение пользователя
+            # Пользователь не зарегистрирован в боте
+            # Удаляем сообщение пользователя
             context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
 
             # Отправляем сообщение о регистрации и приглашение зарегистрироваться
@@ -76,23 +90,10 @@ def message_handler(update, context):
             keyboard = [[InlineKeyboardButton("Зарегистрироваться", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=reply_markup)
-            return
-
-        # Получаем текущее количество сообщений пользователя
-        user_data = users_stats_collection.find_one({'user_id': user_id})
-        if user_data:
-            message_count = user_data.get('message_count', 0)
-
-            # Если количество сообщений кратно 10, начисляем 1 очко репутации
-            if message_count % 10 == 0:
-                # Увеличиваем репутацию на 1 и обновляем запись в базе данных
-                users_stats_collection.update_one(
-                    {'user_id': user_id},
-                    {'$inc': {'reputation': 1}}
-                )
 
     except Exception as e:
         print("Error handling message:", e)
+
 
 # Функция для обработки команды /me
 def me(update, context):
