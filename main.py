@@ -77,7 +77,7 @@ def message_handler(update, context):
 
             # Отправляем сообщение о регистрации и приглашение зарегистрироваться
             invite_message = f"@{username}, салют!\n\nЧтобы писать сообщения в чате, тебе сначала нужно зарегистрироваться в нашем боте. Это не займет у тебя больше минуты."
-            keyboard = [[InlineKeyboardButton("Зарегистрироваться", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
+            keyboard = [[InlineKeyboardButton("Зарегистрироваться", url="t.me/FireFlyCCbot?start=sajydPfNp4")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=reply_markup)
     except Exception as e:
@@ -111,7 +111,7 @@ def me(update, context):
                 profile_message = f"Имя пользователя: @{username}\nКоличество сообщений: {message_count}\nБаланс: {reputation}\nПоследняя активность: {last_activity_date}"
 
                 # Создаем инлайн клавиатуру с кнопкой "Открыть бот"
-                keyboard = [[InlineKeyboardButton("Открыть бот 🤖", url="t.me/Cyndycate_invaterbot?start=yjkqU3t1U8")]]
+                keyboard = [[InlineKeyboardButton("Открыть бот 🤖", url="t.me/FireFlyCCbot?start=sajydPfNp4")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
 
                 # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
