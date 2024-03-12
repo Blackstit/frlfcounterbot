@@ -83,21 +83,21 @@ def me(update, context):
 # Выводит ТОП10 держателей монетки $FRFL
 def top(update, context):
     try:
-        # Получаем топ-10 пользователей по количеству репутации
-        top_users = users_collection.find().sort("reputation", pymongo.DESCENDING).limit(10)
+        # Получаем топ-10 пользователей по балансу $FRFL
+        top_users = users_collection.find().sort("balance", pymongo.DESCENDING).limit(10)
 
         if top_users:
             # Формируем сообщение с топ-10 пользователями
-            top_message = "Топ 10 холдеров $FRFL:\n\n"
+            top_message = "Топ 10 держателей $FRFL:\n\n"
             for index, user in enumerate(top_users, start=1):
                 username = user.get('username', 'Нет')
-                reputation = user.get('reputation', 0)
-                top_message += f"{index}. @{username} - {reputation} $FRFL\n"
+                balance = user.get('balance', 0)
+                top_message += f"{index}. @{username} - {balance} $FRFL\n"
 
             # Отправляем сообщение с топ-10 пользователями
             context.bot.send_message(chat_id=update.message.chat_id, text=top_message)
         else:
-            context.bot.send_message(chat_id=update.message.chat_id, text="Пока нет пользователей с репутацией")
+            context.bot.send_message(chat_id=update.message.chat_id, text="Пока нет пользователей с балансом $FRFL")
     except Exception as e:
         print("Error handling /top command:", e)
 
