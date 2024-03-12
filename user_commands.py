@@ -16,7 +16,7 @@ def me(update, context):
         user_id = update.message.from_user.id
 
         # Получаем данные пользователя из коллекции users
-        user_data = users_collection.find_one({'id': user_id})
+        user_data = users_collection.find_one({'_id': str(user_id)})
 
         if user_data:
             # Получаем данные о пользователе из коллекции users_stats
@@ -45,7 +45,7 @@ def me(update, context):
                 elif last_activity_date >= this_month_start:
                     last_activity = "В этом месяце"
                 else:
-                    last_activity = "Более недавно"
+                    last_activity = "Давно"
 
                 # Получаем данные о пользователе
                 first_name = user_data.get('first_name', 'Нет')
@@ -75,6 +75,7 @@ def me(update, context):
 
     except Exception as e:
         print("Error handling /me command:", e)
+
 
 
 
