@@ -222,14 +222,21 @@ def referral(update, context):
         # Формируем реферальную ссылку
         referral_link = f"t.me/FireFlyCCbot?start={user_data['referral_code']}"
 
-        # Формируем текст ответа
+        # Формируем текст сообщения
         reply_text = (
             "Приглашайте друзей по своей рефферальной ссылке и зарабатывайте до 10% токенов $FRFL "
             "с каждого приведенного вами пользователя!\n\n"
             f"*Ваша реферальная ссылка*: {referral_link}"
         )
 
-        # Отправляем ответ пользователю, используя реплай на сообщение, которое вызвало команду /ref
-        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text, parse_mode="Markdown", reply_to_message_id=update.message.message_id)
+        # Отправляем сообщение с инлайн-клавиатурой
+        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text, reply_markup=markups.ref_reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
+
+# Обработчик для обработки нажатия на кнопку "Отправить другу"
+def send_to_friend(update, context):
+    query = update.callback_query
+    # Отправляем сообщение с текстом, переданным в инлайн-запросе
+    context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id)
+    

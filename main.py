@@ -5,7 +5,7 @@ import user_commands
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 from database import connect_to_database
 
 # Получение коллекций базы данных
@@ -54,6 +54,8 @@ dispatcher.add_handler(CommandHandler("rain", user_commands.rain)) # Обраб�
 dispatcher.add_handler(CommandHandler("help", user_commands.help_command)) # Обработчик команды /help
 dispatcher.add_handler(CommandHandler("stats", user_commands.stats_command)) # Обработчик команды /stats
 dispatcher.add_handler(CommandHandler("ref", user_commands.referral)) # Обработчик команды /ref
+
+dispatcher.add_handler(CallbackQueryHandler(user_commands.send_to_friend, pattern="^send_to_friend$")) # Обработчик нажатия на кнопку "Отправить другу"
 
 # Запускаем бота
 updater.start_polling()
