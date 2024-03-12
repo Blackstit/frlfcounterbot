@@ -123,9 +123,9 @@ def rain(update, context):
             tokens_to_give = 10
 
         # Получаем баланс отправителя из коллекции users
-        sender_data = users_collection.find_one({'id': sender_user_id})
+        sender_data = users_collection.find_one({'_id': str(sender_user_id)})
         if sender_data:
-            sender_balance = sender_data.get('reputation', 0)
+            sender_balance = sender_data.get('balance', 0)
         else:
             context.bot.send_message(chat_id=update.message.chat_id, text="Вы не зарегистрированы.")
             return
@@ -133,7 +133,7 @@ def rain(update, context):
         # Проверяем, достаточно ли у пользователя баланса для раздачи токенов
         if sender_balance >= tokens_to_give:
             # Получаем список всех пользователей, кроме отправителя
-            all_users = list(users_collection.find({"id": {"$ne": sender_user_id}}))
+            all_users = list(users_collection.find({"_id": {"$ne": str(sender_user_id)}}))
 
             # Считаем количество получателей
             num_recipients = len(all_users)
@@ -145,12 +145,12 @@ def rain(update, context):
 
                 # Начисляем токены каждому получателю
                 for user in all_users:
-                    recipient_id = user['id']
+                    recipient_id = user['_id']
                     # Начисляем токены пользователю
-                    users_collection.update_one({"id": recipient_id}, {"$inc": {"reputation": tokens_per_recipient}})
+                    users_collection.update_one({"_id": recipient_id}, {"$inc": {"balance": tokens_per_recipient}})
 
                 # Списываем токены у отправителя
-                users_collection.update_one({"id": sender_user_id}, {"$inc": {"reputation": -tokens_to_give}})
+                users_collection.update_one({"_id": str(sender_user_id)}, {"$inc": {"balance": -tokens_to_give}})
 
                 # Получаем имена пользователей-получателей
                 recipient_usernames = [f"@{user['username']}" for user in all_users]
@@ -167,6 +167,7 @@ def rain(update, context):
             context.bot.send_message(chat_id=update.message.chat_id, text="Недостаточно токенов на балансе.")
     except Exception as e:
         print("Error handling /rain command:", e)
+
 
 # Выводит основную информацию о боте и список доступных команд
 def help_command(update, context):
