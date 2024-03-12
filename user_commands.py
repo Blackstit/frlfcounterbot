@@ -67,7 +67,7 @@ def me(update, context):
                 )
 
                 # Отправляем сообщение с профилем пользователя
-                context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, parse_mode="Markdown")
+                context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, parse_mode="Markdown", reply_markup=markups.profile_markup)
             else:
                 context.bot.send_message(chat_id=update.message.chat_id, text="Данные пользователя отсутствуют", reply_to_message_id=update.message.message_id)
         else:
