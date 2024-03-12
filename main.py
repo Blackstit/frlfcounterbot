@@ -53,6 +53,7 @@ dispatcher.add_handler(CommandHandler("top", user_commands.top)) # Обрабо�
 dispatcher.add_handler(CommandHandler("rain", user_commands.rain)) # Обработчик команды /rain
 dispatcher.add_handler(CommandHandler("help", user_commands.help_command)) # Обработчик команды /help
 dispatcher.add_handler(CommandHandler("stats", user_commands.stats_command)) # Обработчик команды /stats
+dispatcher.add_handler(CommandHandler("memberscount", members_count)) # Обработчик команды /memberscount
 
 # Запускаем бота
 updater.start_polling()

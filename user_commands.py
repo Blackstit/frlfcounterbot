@@ -203,3 +203,9 @@ def stats_command(update, context):
 
     except Exception as e:
         print("Error handling /stats command:", e)
+
+# Обработчик команды /memberscount
+def members_count(update, context):
+    chat_id = update.effective_chat.id
+    members_count = context.bot.get_chat_members_count(chat_id)
+    update.message.reply_text(f"Количество участников в чате: {members_count}")
