@@ -243,5 +243,5 @@ def referral(update, context):
 def send_to_friend(update, context):
     query = update.callback_query
     # Отправляем сообщение с текстом, переданным в инлайн-запросе
-    context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id)
+    context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id, disable_web_page_preview=True)
     
