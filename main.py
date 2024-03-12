@@ -47,8 +47,6 @@ def count_messages(message):
         balance = message_cost
         users_collection.insert_one({"_id": user_id, "balance": balance, "message_cost": message_cost})
 
-    # Продолжаем обработку других сообщений
-    bot.process_new_messages([message])
 
 
 
