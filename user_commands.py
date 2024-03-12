@@ -8,35 +8,57 @@ import pymongo
 users_stats_collection, users_collection, commands_collection, tasks_collection = connect_to_database()
 
 #  Функция обработки команды /me
-# Команда выводит основную информацию о пользователе в чат
-# Имя пользователя
-# Колличество сообщений
-# Баланс
-# Дата последней активности
+from datetime import datetime, timedelta
+
 def me(update, context):
     try:
         # Получаем идентификатор пользователя, отправившего сообщение
         user_id = update.message.from_user.id
 
         # Получаем данные пользователя из коллекции users
-        user_data = users_collection.find_one({'id': user_id})
-
+        user_data = users_collection.find_one({"_id": str(user_id)})
+        
         if user_data:
             # Получаем данные о пользователе из коллекции users_stats
-            user_stats_data = users_stats_collection.find_one({'user_id': user_id})
+            user_stats_data = users_stats_collection.find_one({'user_id': str(user_id)})
 
             # Если данные о пользователе есть в users_stats, используем их
             if user_stats_data:
                 username = user_stats_data.get('username', 'Нет')
-                message_count = user_stats_data.get('message_count', 0)
-                last_activity_date = user_stats_data.get('last_message_date', 'Нет данных')
+                message_count = len(user_data.get('tasks_completed', []))  # Количество сообщений из коллекции completed_tasks
+                last_activity_date = user_stats_data.get('last_message_date')
                 reputation = user_data.get('reputation', 0)
+                message_cost = user_data.get('message_cost', 0.5)
+                
+                # Определение временной отметки последней активности
+                if last_activity_date:
+                    last_activity_date = datetime.strptime(last_activity_date, "%Y-%m-%d %H:%M:%S")
+                    today = datetime.today()
+                    if today.date() == last_activity_date.date():
+                        last_activity = "Сегодня"
+                    elif today.date() - last_activity_date.date() == timedelta(days=1):
+                        last_activity = "Вчера"
+                    elif today.date() - last_activity_date.date() < timedelta(days=7):
+                        last_activity = "На этой неделе"
+                    elif today.date().month == last_activity_date.date().month:
+                        last_activity = "В этом месяце"
+                    else:
+                        last_activity = last_activity_date.strftime("%Y-%m-%d")
+                else:
+                    last_activity = "Нет данных"
 
-                # Формируем сообщение профиля с учетом количества сообщений, репутации и информации о пригласившем пользователе
-                profile_message = f"Имя пользователя: @{username}\nКоличество сообщений: {message_count}\nБаланс: {reputation}\nПоследняя активность: {last_activity_date}"
+                # Формируем сообщение профиля
+                profile_message = (f"*Имя пользователя*: {user_data.get('first_name')}\n"
+                                   f"*Username*: @{username}\n"
+                                   f"*Роль*: {user_data['roles'][0]['role_name']}\n"
+                                   f"*Репутация*: {reputation}\n"
+                                   f"*Стоимость сообщения*: {message_cost}\n"
+                                   f"*Количество сообщений*: {message_count}\n"
+                                   f"*Последняя активность*: {last_activity}\n"
+                                   f"*Баланс*: {user_data.get('balance')}")
 
-                # Отправляем сообщение с профилем пользователя, используя реплай на сообщение, которое вызвало команду /me
-                context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, reply_markup=markups.profile_markup)
+                # Отправляем сообщение с профилем пользователя
+                context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, parse_mode='MarkdownV2')
             else:
                 context.bot.send_message(chat_id=update.message.chat_id, text="Данные пользователя отсутствуют", reply_to_message_id=update.message.message_id)
         else:
@@ -44,6 +66,7 @@ def me(update, context):
 
     except Exception as e:
         print("Error handling /me command:", e)
+
 
 # Функция обработки команды /top
 # Выводит ТОП10 держателей монетки $FRFL
