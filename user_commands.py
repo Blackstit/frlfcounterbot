@@ -120,7 +120,7 @@ def rain(update, context):
                 return
         else:
             # Устанавливаем значение по умолчанию, если пользователь не указал количество токенов
-            tokens_to_give = 10
+            tokens_to_give = 5
 
         # Получаем баланс отправителя из коллекции users
         sender_data = users_collection.find_one({'_id': str(sender_user_id)})
@@ -216,17 +216,13 @@ def stats_command(update, context):
         # Получаем количество пользователей в боте
         total_users_count = users_collection.count_documents({})
 
-        # Получаем количество сообщений
-        total_messages_count = users_stats_collection.aggregate([{"$group": {"_id": None, "total": {"$sum": "$message_count"}}}])
-        total_messages_count = list(total_messages_count)[0]['total'] if total_messages_count else 0
-
         # Получаем суммарное количество токенов всех пользователей
-        total_tokens_earned = sum(user.get('reputation', 0) for user in users_collection.find({}))
+        total_tokens_earned = sum(user.get('balance', 0) for user in users_collection.find({}))
 
         # Получаем сумму всех выполненных заданий
         total_tasks_completed = tasks_collection.count_documents({})
 
-        # Получаекм количество участников в чате
+        # Получаем количество участников в чате
         chat_id = update.effective_chat.id
         members_count = context.bot.get_chat_members_count(chat_id)
 
@@ -235,8 +231,7 @@ def stats_command(update, context):
             "Статистика FireFly Community\n\n"
             f"*Количество пользователей в боте*: {total_users_count}\n\n"
             f"*Количество участников в чате*: {members_count}\n\n"
-            f"*Отправлено сообщений*: {total_messages_count}\n\n"
-            f"*Всего заработано*: {total_tokens_earned}\n\n"
+            f"*Всего заработано*: {total_tokens_earned} $FRFL\n\n"
             f"*Выполнено заданий*: {total_tasks_completed}"
         )
 
@@ -253,11 +248,11 @@ def referral(update, context):
     user_id = update.message.from_user.id
 
     # Получаем данные пользователя из коллекции users
-    user_data = users_collection.find_one({'id': user_id})
+    user_data = users_collection.find_one({'_id': str(user_id)})
 
     if user_data:
         # Формируем реферальную ссылку
-        referral_link = f"t.me/FireFlyCCbot?start={user_data['referral_code']}"
+        referral_link = user_data['referral_link']
 
         # Формируем текст сообщения для отправки в чате
         reply_text_chat = (
