@@ -224,18 +224,26 @@ def referral(update, context):
         # Формируем реферальную ссылку
         referral_link = f"t.me/FireFlyCCbot?start={user_data['referral_code']}"
 
-        # Формируем текст сообщения
-        reply_text = (
+        # Формируем текст сообщения для отправки в чате
+        reply_text_chat = (
             "Приглашайте друзей по своей рефферальной ссылке и зарабатывайте до 10% токенов $FRFL "
             "с каждого приведенного вами пользователя!\n\n"
             f"*Ваша реферальная ссылка*: {referral_link}"
         )
 
-        ref_keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=reply_text)]]
-        ref_reply_markup = InlineKeyboardMarkup(ref_keyboard )
+        # Формируем текст сообщения для отправки другу
+        reply_text_friend = (
+            "Привет! Я приглашаю тебя присоединиться к боту FireFly Crypto. "
+            "С ним ты можешь зарабатывать токены $FRFL и получать до 10% с каждого пользователя, "
+            "приглашенного тобой. Вот моя реферальная ссылка для регистрации: {referral_link}"
+        )
 
-        # Отправляем сообщение с инлайн-клавиатурой
-        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text, reply_markup=ref_reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
+        # Формируем инлайн-клавиатуру для отправки в чате
+        keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=reply_text_friend)]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Отправляем сообщение с инлайн-клавиатурой в чат
+        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text_chat, reply_markup=reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
 
@@ -243,5 +251,6 @@ def referral(update, context):
 def send_to_friend(update, context):
     query = update.callback_query
     # Отправляем сообщение с текстом, переданным в инлайн-запросе
-    context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id, disable_web_page_preview=True)
+    context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id)
+
     
