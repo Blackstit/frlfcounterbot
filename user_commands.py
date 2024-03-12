@@ -222,7 +222,7 @@ def referral(update, context):
 
     if user_data:
         # Формируем реферальную ссылку
-        referral_link = f"[тут ссылка в формате](t.me/FireFlyCCbot?start={user_data['referral_code']})"
+        referral_link = f"t.me/FireFlyCCbot?start={user_data['referral_code']}"
 
         # Формируем текст сообщения для отправки в чате
         reply_text_chat = (
@@ -231,33 +231,24 @@ def referral(update, context):
             f"*Ваша реферальная ссылка*: {referral_link}"
         )
 
+        # Формируем текст сообщения для отправки другу
+        reply_text_friend = (
+            "Привет! Я приглашаю тебя присоединиться к боту FireFly Crypto. "
+            "С ним ты можешь зарабатывать токены $FRFL и получать до 10% с каждого пользователя, "
+            f"приглашенного тобой. Вот моя реферальная ссылка для регистрации: {referral_link}"
+        )
+
         # Формируем инлайн-клавиатуру для отправки в чате
-        keyboard = [[InlineKeyboardButton("Отправить другу", callback_data="send_to_friend")]]
+        keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=reply_text_friend)]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         # Отправляем сообщение с инлайн-клавиатурой в чат
-        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text_chat, reply_markup=reply_markup, parse_mode="Markdown")
+        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text_chat, reply_markup=reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
 
 # Обработчик для обработки нажатия на кнопку "Отправить другу"
 def send_to_friend(update, context):
-    # Получаем идентификатор пользователя, который нажал на кнопку
-    user_id = update.callback_query.from_user.id
-
-    # Получаем данные пользователя из коллекции users
-    user_data = users_collection.find_one({'id': user_id})
-
-    if user_data:
-        # Формируем реферальную ссылку
-        referral_link = f"[тут ссылка в формате](t.me/FireFlyCCbot?start={user_data['referral_code']})"
-
-        # Формируем текст сообщения для отправки другу
-        reply_text_friend = (
-            f"Привет! Я приглашаю тебя присоединиться к боту FireFly Crypto. "
-            f"С ним ты можешь зарабатывать токены $FRFL и получать до 10% с каждого пользователя, "
-            f"приглашенного тобой. Вот моя реферальная ссылка для регистрации: {referral_link}"
-        )
-
-        # Отправляем сообщение другу
-        context.bot.send_message(chat_id=update.callback_query.message.chat_id, text=reply_text_friend, parse_mode="Markdown")
+    query = update.callback_query
+    # Отправляем сообщение с текстом, переданным в инлайн-запросе
+    context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id)
