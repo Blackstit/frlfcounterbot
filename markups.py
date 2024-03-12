@@ -15,5 +15,5 @@ rain_keyboard = [[InlineKeyboardButton("Что это?", url="https://telegra.ph
 rain_markup = InlineKeyboardMarkup(rain_keyboard)
 
 # Формируем инлайн-клавиатуру
-ref_keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=user_commands.reply_text)]]
-ref_reply_markup = InlineKeyboardMarkup(ref_keyboard )
+# ref_keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=user_commands.reply_text)]]
+# ref_reply_markup = InlineKeyboardMarkup(ref_keyboard )

@@ -1,4 +1,5 @@
 from database import connect_to_database
+from telegram.ext import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQueryHandler
 import markups
 import pymongo
 
@@ -229,8 +230,11 @@ def referral(update, context):
             f"*Ваша реферальная ссылка*: {referral_link}"
         )
 
+        ref_keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=reply_text)]]
+        ref_reply_markup = InlineKeyboardMarkup(ref_keyboard )
+
         # Отправляем сообщение с инлайн-клавиатурой
-        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text, reply_markup=markups.ref_reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
+        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text, reply_markup=ref_reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
     else:
         context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
 
