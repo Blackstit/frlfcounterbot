@@ -13,10 +13,10 @@ from datetime import datetime, timedelta
 def me(update, context):
     try:
         # Получаем идентификатор пользователя, отправившего сообщение
-        user_id = update.message.from_user.id
+        user_id = str(update.message.from_user.id)
 
         # Получаем данные пользователя из коллекции users
-        user_data = users_collection.find_one({'_id': str(user_id)})
+        user_data = users_collection.find_one({'_id': user_id})
 
         if user_data:
             # Получаем данные о пользователе из коллекции users_stats
@@ -75,7 +75,6 @@ def me(update, context):
 
     except Exception as e:
         print("Error handling /me command:", e)
-
 
 
 
