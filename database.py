@@ -19,3 +19,4 @@ def connect_to_database():
     tasks_collection = db.get_collection('completed_tasks')  # Коллекция для выполненных заданий
 
     return users_stats_collection, users_collection, commands_collection, tasks_collection
+
