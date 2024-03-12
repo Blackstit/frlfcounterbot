@@ -14,7 +14,7 @@ users_stats_collection, users_collection, commands_collection, tasks_collection 
 # Получаем токен
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-def count_messages(message):
+def message_handler(message):
     user_id = str(message.chat.id)
 
     # Получаем данные пользователя из коллекции users
