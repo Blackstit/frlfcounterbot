@@ -16,49 +16,58 @@ def me(update, context):
         user_id = update.message.from_user.id
 
         # Получаем данные пользователя из коллекции users
-        user_data = users_collection.find_one({"_id": str(user_id)})
-        
+        user_data = users_collection.find_one({'id': user_id})
+
         if user_data:
             # Получаем данные о пользователе из коллекции users_stats
-            user_stats_data = users_stats_collection.find_one({'user_id': str(user_id)})
+            user_stats_data = users_stats_collection.find_one({'user_id': user_id})
 
             # Если данные о пользователе есть в users_stats, используем их
             if user_stats_data:
                 username = user_stats_data.get('username', 'Нет')
-                message_count = len(user_data.get('tasks_completed', []))  # Количество сообщений из коллекции completed_tasks
-                last_activity_date = user_stats_data.get('last_message_date')
+                message_count = user_stats_data.get('message_count', 0)
+                last_activity_date = user_stats_data.get('last_message_date', 'Нет данных')
+                
+                # Определяем период последней активности
+                today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                yesterday = today - timedelta(days=1)
+                this_week_start = today - timedelta(days=today.weekday())
+                this_month_start = today.replace(day=1)
+
+                # Определяем период последней активности пользователя
+                last_activity_date = datetime.strptime(last_activity_date, "%Y-%m-%d %H:%M:%S")
+                if last_activity_date >= today:
+                    last_activity = "Сегодня"
+                elif last_activity_date >= yesterday:
+                    last_activity = "Вчера"
+                elif last_activity_date >= this_week_start:
+                    last_activity = "На этой неделе"
+                elif last_activity_date >= this_month_start:
+                    last_activity = "В этом месяце"
+                else:
+                    last_activity = "Более недавно"
+
+                # Получаем данные о пользователе
+                first_name = user_data.get('first_name', 'Нет')
+                role_name = user_data.get('roles', [{'role_name': 'Newbie'}])[0]['role_name']
                 reputation = user_data.get('reputation', 0)
                 message_cost = user_data.get('message_cost', 0.5)
-                
-                # Определение временной отметки последней активности
-                if last_activity_date:
-                    last_activity_date = datetime.strptime(last_activity_date, "%Y-%m-%d %H:%M:%S")
-                    today = datetime.today()
-                    if today.date() == last_activity_date.date():
-                        last_activity = "Сегодня"
-                    elif today.date() - last_activity_date.date() == timedelta(days=1):
-                        last_activity = "Вчера"
-                    elif today.date() - last_activity_date.date() < timedelta(days=7):
-                        last_activity = "На этой неделе"
-                    elif today.date().month == last_activity_date.date().month:
-                        last_activity = "В этом месяце"
-                    else:
-                        last_activity = last_activity_date.strftime("%Y-%m-%d")
-                else:
-                    last_activity = "Нет данных"
+                balance = user_data.get('balance', 0)
 
                 # Формируем сообщение профиля
-                profile_message = (f"*Имя пользователя*: {user_data.get('first_name')}\n"
-                                   f"*Username*: @{username}\n"
-                                   f"*Роль*: {user_data['roles'][0]['role_name']}\n"
-                                   f"*Репутация*: {reputation}\n"
-                                   f"*Стоимость сообщения*: {message_cost}\n"
-                                   f"*Количество сообщений*: {message_count}\n"
-                                   f"*Последняя активность*: {last_activity}\n"
-                                   f"*Баланс*: {user_data.get('balance')}")
+                profile_message = (
+                    f"*Имя пользователя*: {first_name}\n"
+                    f"*Username*: @{username}\n"
+                    f"*Роль*: {role_name}\n"
+                    f"*Репутация*: {reputation}\n"
+                    f"*Стоимость сообщения*: {message_cost}\n"
+                    f"*Количество сообщений*: {message_count}\n"
+                    f"*Последняя активность*: {last_activity}\n"
+                    f"*Баланс*: {balance}\n"
+                )
 
                 # Отправляем сообщение с профилем пользователя
-                context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, parse_mode='MarkdownV2')
+                context.bot.send_message(chat_id=update.message.chat_id, text=profile_message, reply_to_message_id=update.message.message_id, parse_mode="Markdown")
             else:
                 context.bot.send_message(chat_id=update.message.chat_id, text="Данные пользователя отсутствуют", reply_to_message_id=update.message.message_id)
         else:
@@ -66,6 +75,7 @@ def me(update, context):
 
     except Exception as e:
         print("Error handling /me command:", e)
+
 
 
 # Функция обработки команды /top
