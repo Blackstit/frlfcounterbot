@@ -14,29 +14,43 @@ users_stats_collection, users_collection, commands_collection, tasks_collection 
 # Получаем токен
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-def message_handler(update, context):
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    username = update.message.from_user.username
-    message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Текущая дата и время
+@bot.message_handler(func=lambda message: True)
+def count_messages(message):
+    user_id = str(message.chat.id)
 
-    # Проверяем, существует ли запись о пользователе в коллекции users
-    user_data = users_collection.find_one({'id': user_id})
-    try:
-        if user_data:
-            # Пользователь зарегистрирован в боте
-            users_stats_collection.update_one(
-                {'user_id': user_id},
-                {'$inc': {'message_count': 1}, '$set': {'last_message_date': message_date}},
-                upsert=True
-            )
+    # Получаем данные пользователя из коллекции users
+    user_data = users_collection.find_one({"_id": user_id})
+    if user_data:
+        message_cost = user_data.get('message_cost', 0.5)  # Значение по умолчанию 0.5, если не задано
+        balance = user_data.get('balance', 0)
+        new_balance = balance + message_cost
+
+        # Обновляем баланс пользователя в коллекции
+        users_collection.update_one({"_id": user_id}, {"$set": {"balance": new_balance}})
+
+        # Получаем данные о пользователе из коллекции users_stats
+        user_stats_data = users_stats_collection.find_one({'user_id': user_id})
+
+        # Если данные о пользователе есть в users_stats, обновляем их
+        if user_stats_data:
+            # Обновляем количество отправленных сообщений и дату последнего сообщения
+            message_count = user_stats_data.get('message_count', 0) + 1
+            last_message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            users_stats_collection.update_one({"user_id": user_id}, {"$set": {"message_count": message_count, "last_message_date": last_message_date}})
         else:
-            # Пользователь не зарегистрирован в боте
-            invite_message = f"@{username}, салют!\n\nЧтобы писать сообщения в чате, тебе сначала нужно зарегистрироваться в нашем боте. Это не займет у тебя больше минуты."
-            context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
-            context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
-    except Exception as e:
-        print("Error handling message:", e)
+            # Если данных о пользователе нет, создаем новую запись
+            last_message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            user_stats = {"user_id": user_id, "username": message.chat.username, "message_count": 1, "last_message_date": last_message_date}
+            users_stats_collection.insert_one(user_stats)
+    else:
+        # Если данных о пользователе нет, создаем новую запись с дефолтной стоимостью сообщения и балансом
+        message_cost = 0.5
+        balance = message_cost
+        users_collection.insert_one({"_id": user_id, "balance": balance, "message_cost": message_cost})
+
+    # Продолжаем обработку других сообщений
+    bot.process_new_messages([message])
+
 
 
 # Создаем объект updater и передаем ему токен вашего бота
