@@ -1,6 +1,6 @@
 from database import connect_to_database
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQueryHandler
+from telegram.ext import CallbackQueryHandler
 import markups
 import pymongo
 
