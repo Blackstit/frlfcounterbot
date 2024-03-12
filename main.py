@@ -14,40 +14,36 @@ users_stats_collection, users_collection, commands_collection, tasks_collection 
 # Получаем токен
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-def message_handler(message):
-    user_id = str(message.chat.id)
+def message_handler(update, context):
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    username = update.message.from_user.username
+    message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Текущая дата и время
 
     # Получаем данные пользователя из коллекции users
-    user_data = users_collection.find_one({"_id": user_id})
+    user_data = users_collection.find_one({"_id": str(user_id)})
     if user_data:
         message_cost = user_data.get('message_cost', 0.5)  # Значение по умолчанию 0.5, если не задано
         balance = user_data.get('balance', 0)
         new_balance = balance + message_cost
 
         # Обновляем баланс пользователя в коллекции
-        users_collection.update_one({"_id": user_id}, {"$set": {"balance": new_balance}})
+        users_collection.update_one({"_id": str(user_id)}, {"$set": {"balance": new_balance}})
 
-        # Получаем данные о пользователе из коллекции users_stats
-        user_stats_data = users_stats_collection.find_one({'user_id': user_id})
-
-        # Если данные о пользователе есть в users_stats, обновляем их
-        if user_stats_data:
-            # Обновляем количество отправленных сообщений и дату последнего сообщения
-            message_count = user_stats_data.get('message_count', 0) + 1
-            last_message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            users_stats_collection.update_one({"user_id": user_id}, {"$set": {"message_count": message_count, "last_message_date": last_message_date}})
-        else:
-            # Если данных о пользователе нет, создаем новую запись
-            last_message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            user_stats = {"user_id": user_id, "username": message.chat.username, "message_count": 1, "last_message_date": last_message_date}
-            users_stats_collection.insert_one(user_stats)
+        # Пользователь зарегистрирован в боте, обновляем статистику сообщений
+        users_stats_collection.update_one(
+            {'user_id': str(user_id)},
+            {'$inc': {'message_count': 1}, '$set': {'last_message_date': message_date}},
+            upsert=True
+        )
     else:
-        # Если данных о пользователе нет, создаем новую запись с дефолтной стоимостью сообщения и балансом
-        message_cost = 0.5
-        balance = message_cost
-        users_collection.insert_one({"_id": user_id, "balance": balance, "message_cost": message_cost})
+        # Если пользователь не зарегистрирован в боте, отправляем приглашение к регистрации
+        invite_message = f"@{username}, салют!\n\nЧтобы писать сообщения в чате, тебе сначала нужно зарегистрироваться в нашем боте. Это не займет у тебя больше минуты."
+        context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
+        context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
 
-
+    # Продолжаем обработку сообщений
+    context.bot.process_new_updates([update])
 
 
 # Создаем объект updater и передаем ему токен вашего бота
