@@ -42,9 +42,6 @@ def message_handler(update, context):
         context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
         context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
 
-    # Продолжаем обработку сообщений
-    context.bot.process_new_updates([update])
-
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
