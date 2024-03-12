@@ -189,10 +189,15 @@ def stats_command(update, context):
         # Получаем сумму всех выполненных заданий
         total_tasks_completed = tasks_collection.count_documents({})
 
+        # Получаекм количество участников в чате
+        chat_id = update.effective_chat.id
+        members_count = context.bot.get_chat_members_count(chat_id)
+
         # Формируем текст статистики
         stats_message = (
             "Статистика FireFly Community\n\n"
-            f"*Всего пользователей в боте*: {total_users_count}\n\n"
+            f"*Количество пользователей в боте*: {total_users_count}\n\n"
+            f"*Количество участников в чате*: {members_count}\n\n"
             f"*Отправлено сообщений*: {total_messages_count}\n\n"
             f"*Всего заработано*: {total_tokens_earned}\n\n"
             f"*Выполнено заданий*: {total_tasks_completed}"
@@ -204,8 +209,27 @@ def stats_command(update, context):
     except Exception as e:
         print("Error handling /stats command:", e)
 
-# Обработчик команды /memberscount
-def members_count(update, context):
-    chat_id = update.effective_chat.id
-    members_count = context.bot.get_chat_members_count(chat_id)
-    update.message.reply_text(f"Количество участников в чате: {members_count}")
+
+# Обработчик команды /ref
+def referral(update, context):
+    # Получаем идентификатор пользователя, отправившего команду
+    user_id = update.message.from_user.id
+
+    # Получаем данные пользователя из коллекции users
+    user_data = users_collection.find_one({'id': user_id})
+
+    if user_data:
+        # Формируем реферальную ссылку
+        referral_link = f"t.me/FireFlyCCbot?start={user_data['referral_code']}"
+
+        # Формируем текст ответа
+        reply_text = (
+            "Приглашайте друзей по своей рефферальной ссылке и зарабатывайте до 10% токенов $FRFL "
+            "с каждого приведенного вами пользователя!\n\n"
+            f"*Ваша реферальная ссылка*: {referral_link}"
+        )
+
+        # Отправляем ответ пользователю, используя реплай на сообщение, которое вызвало команду /ref
+        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text, parse_mode="Markdown", reply_to_message_id=update.message.message_id)
+    else:
+        context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
