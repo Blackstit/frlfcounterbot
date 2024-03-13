@@ -5,7 +5,7 @@ import user_commands
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, ChatMemberHandler, ChatMemberUpdated
 from database import connect_to_database
 
 # Получение коллекций базы данных
@@ -13,6 +13,13 @@ users_stats_collection, users_collection, commands_collection, tasks_collection 
 
 # Получаем токен
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+def welcome_message(update, context):
+    new_chat_member = update.message.new_chat_members[0]  # Получаем информацию о новом участнике
+    chat_id = update.message.chat_id
+    if new_chat_member.is_bot:
+        return  # Не отправляем приветствие, если новый участник - бот
+    context.bot.send_message(chat_id=chat_id, text="Приветствую тебя в нашем чате!")
 
 def message_handler(update, context):
     chat_id = update.message.chat_id
@@ -60,6 +67,7 @@ dispatcher.add_handler(CommandHandler("stats", user_commands.stats_command)) # �
 dispatcher.add_handler(CommandHandler("ref", user_commands.referral)) # Обработчик команды /ref
 
 dispatcher.add_handler(CallbackQueryHandler(user_commands.send_to_friend, pattern="^send_to_friend$")) # Обработчик нажатия на кнопку "Отправить другу"
+dispatcher.add_handler(ChatMemberHandler(welcome_message, ChatMemberUpdated)) # Обработчик новых участников чата
 
 # Запускаем бота
 updater.start_polling()
