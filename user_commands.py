@@ -24,7 +24,6 @@ def me(update, context):
 
             # Если данные о пользователе есть в users_stats, используем их
             if user_stats_data:
-                username = user_stats_data.get('username', 'Нет')
                 message_count = user_stats_data.get('message_count', 0)
                 last_activity_date = user_stats_data.get('last_message_date', 'Нет данных')
                 
@@ -50,6 +49,7 @@ def me(update, context):
                 # Получаем данные о пользователе
                 first_name = user_data.get('first_name', 'Нет')
                 role_name = user_data.get('roles', [{'role_name': 'Newbie'}])[0]['role_name']
+                username = user_data.get('username', 'Нет')
                 reputation = user_data.get('reputation', 0)
                 message_cost = user_data.get('message_cost', 0.5)
                 balance = user_data.get('balance', 0)
