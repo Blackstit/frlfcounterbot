@@ -4,9 +4,10 @@ import markups
 import user_commands
 from datetime import datetime
 from dotenv import load_dotenv
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, ChatMemberHandler, ChatMemberUpdated
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext
 from database import connect_to_database
+from telegram.ext.dispatcher import run_async
 
 # Получение коллекций базы данных
 users_stats_collection, users_collection, commands_collection, tasks_collection = connect_to_database()
@@ -14,12 +15,13 @@ users_stats_collection, users_collection, commands_collection, tasks_collection 
 # Получаем токен
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-def welcome_message(update, context):
-    new_chat_member = update.message.new_chat_members[0]  # Получаем информацию о новом участнике
+@run_async
+def welcome_message(update: Update, context: CallbackContext):
+    new_chat_members = update.message.new_chat_members
     chat_id = update.message.chat_id
-    if new_chat_member.is_bot:
-        return  # Не отправляем приветствие, если новый участник - бот
-    context.bot.send_message(chat_id=chat_id, text="Приветствую тебя в нашем чате!")
+    for new_member in new_chat_members:
+        if not new_member.is_bot:
+            context.bot.send_message(chat_id=chat_id, text="Приветствую тебя в нашем чате!")
 
 def message_handler(update, context):
     chat_id = update.message.chat_id
