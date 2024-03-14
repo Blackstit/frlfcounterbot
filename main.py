@@ -82,6 +82,7 @@ def message_handler(update: Update, context: CallbackContext):
     except Exception as e:
         print("Error handling message:", e)
 
+
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
 
