@@ -1,15 +1,14 @@
 from database import connect_to_database
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
+from datetime import datetime, timedelta
 import markups
 import pymongo
 
 # Получение коллекций базы данных
-users_stats_collection, users_collection, commands_collection, tasks_collection = connect_to_database()
+chats_stats_collection, users_collection, commands_collection = connect_to_database()
 
-#  Функция обработки команды /me
-from datetime import datetime, timedelta
-
+# Функция обработки команды /me
 def me(update, context):
     try:
         # Получаем идентификатор пользователя, отправившего сообщение
@@ -19,11 +18,12 @@ def me(update, context):
         user_data = users_collection.find_one({'_id': user_id})
 
         if user_data:
-            # Получаем данные о пользователе из коллекции users_stats
-            user_stats_data = users_stats_collection.find_one({'user_id': user_id})
-
-            # Если данные о пользователе есть в users_stats, используем их
-            if user_stats_data:
+            # Получаем данные о пользователе из коллекции chats_stats
+            chat_title = update.message.chat.title
+            chat_stats_data = chats_stats_collection.find_one({'chat_title': chat_title})
+            
+            if chat_stats_data and 'users' in chat_stats_data:
+                user_stats_data = chat_stats_data['users'].get(user_id, {})
                 message_count = user_stats_data.get('message_count', 0)
                 last_activity_date = user_stats_data.get('last_message_date', 'Нет данных')
                 
@@ -100,6 +100,7 @@ def top(update, context):
     except Exception as e:
         print("Error handling /top command:", e)
 
+
 # Функция обработки команды /rain
 # Команда позволяет устроить некий розыгрышь среди 1-5 случайными пользователями чата, которые прошли регистрацию в основном боте
 def rain(update, context):
@@ -121,7 +122,7 @@ def rain(update, context):
             # Устанавливаем значение по умолчанию, если пользователь не указал количество токенов
             tokens_to_give = 5
 
-        # Получаем баланс отправителя из коллекции users
+        # Получаем информацию о пользователе, отправившем команду
         sender_data = users_collection.find_one({'_id': str(sender_user_id)})
         if sender_data:
             sender_balance = sender_data.get('balance', 0)
@@ -167,13 +168,9 @@ def rain(update, context):
     except Exception as e:
         print("Error handling /rain command:", e)
 
-
 # Выводит основную информацию о боте и список доступных команд
 def help_command(update, context):
     try:
-        # Получаем ID пользователя, отправившего команду
-        user_id = update.message.from_user.id
-
         # Формируем сообщение приветствия
         welcome_message = ("Привет, я бот FireFly Crypto!\n\n"
                            "Я создан для того, чтобы наше с вами сообщество развивалось, "
@@ -205,11 +202,6 @@ def help_command(update, context):
         print("Error handling /help command:", e)
 
 # Выводит основную статистику по чату и по боту
-        # Всего пользователей в боте
-        # Отправлено сообщений
-        # Всего заработано
-        # Выполнено заданий
-
 def stats_command(update, context):
     try:
         # Получаем количество пользователей в боте
@@ -217,9 +209,6 @@ def stats_command(update, context):
 
         # Получаем суммарное количество токенов всех пользователей
         total_tokens_earned = sum(user.get('balance', 0) for user in users_collection.find({}))
-
-        # Получаем сумму всех выполненных заданий
-        total_tasks_completed = tasks_collection.count_documents({})
 
         # Получаем количество участников в чате
         chat_id = update.effective_chat.id
@@ -230,8 +219,7 @@ def stats_command(update, context):
             "Статистика FireFly Community\n\n"
             f"*Количество пользователей в боте*: {total_users_count}\n\n"
             f"*Количество участников в чате*: {members_count}\n\n"
-            f"*Всего заработано*: {total_tokens_earned} $FRFL\n\n"
-            f"*Выполнено заданий*: {total_tasks_completed}"
+            f"*Всего заработано*: {total_tokens_earned} $FRFL"
         )
 
         # Отправляем сообщение с статистикой
@@ -241,43 +229,50 @@ def stats_command(update, context):
         print("Error handling /stats command:", e)
 
 
+
 # Обработчик команды /ref
 def referral(update, context):
-    # Получаем идентификатор пользователя, отправившего команду
-    user_id = update.message.from_user.id
+    try:
+        # Получаем идентификатор пользователя, отправившего команду
+        user_id = update.message.from_user.id
 
-    # Получаем данные пользователя из коллекции users
-    user_data = users_collection.find_one({'_id': str(user_id)})
+        # Получаем данные пользователя из коллекции users
+        user_data = users_collection.find_one({'_id': str(user_id)})
 
-    if user_data:
-        # Формируем реферальную ссылку
-        referral_link = user_data['referral_link']
+        if user_data:
+            # Формируем реферальную ссылку
+            referral_link = user_data['referral_link']
 
-        # Формируем текст сообщения для отправки в чате
-        reply_text_chat = (
-            "Приглашайте друзей по своей рефферальной ссылке и зарабатывайте до 10% токенов $FRFL "
-            "с каждого приведенного вами пользователя!\n\n"
-            f"*Ваша реферальная ссылка*: {referral_link}"
-        )
+            # Формируем текст сообщения для отправки в чате
+            reply_text_chat = (
+                "Приглашайте друзей по своей рефферальной ссылке и зарабатывайте до 10% токенов $FRFL "
+                "с каждого приведенного вами пользователя!\n\n"
+                f"*Ваша реферальная ссылка*: {referral_link}"
+            )
 
-        # Формируем текст сообщения для отправки другу
-        reply_text_friend = (
-            "Привет! Я приглашаю тебя присоединиться к боту FireFly Crypto. "
-            "С ним ты можешь зарабатывать токены $FRFL и получать до 10% с каждого пользователя, "
-            f"приглашенного тобой. Вот моя реферальная ссылка для регистрации: {referral_link}"
-        )
+            # Формируем текст сообщения для отправки другу
+            reply_text_friend = (
+                "Привет! Я приглашаю тебя присоединиться к боту FireFly Crypto. "
+                "С ним ты можешь зарабатывать токены $FRFL и получать до 10% с каждого пользователя, "
+                f"приглашенного тобой. Вот моя реферальная ссылка для регистрации: {referral_link}"
+            )
 
-        # Формируем инлайн-клавиатуру для отправки в чате
-        keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=reply_text_friend)]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+            # Формируем инлайн-клавиатуру для отправки в чате
+            keyboard = [[InlineKeyboardButton("Отправить другу", switch_inline_query=reply_text_friend)]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Отправляем сообщение с инлайн-клавиатурой в чат
-        context.bot.send_message(chat_id=update.message.chat_id, text=reply_text_chat, reply_markup=reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
-    else:
-        context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
+            # Отправляем сообщение с инлайн-клавиатурой в чат
+            context.bot.send_message(chat_id=update.message.chat_id, text=reply_text_chat, reply_markup=reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
+        else:
+            context.bot.send_message(chat_id=update.message.chat_id, text="Вы еще не зарегистрированы", reply_to_message_id=update.message.message_id)
+    except Exception as e:
+        print("Error handling /ref command:", e)
 
 # Обработчик для обработки нажатия на кнопку "Отправить другу"
 def send_to_friend(update, context):
-    query = update.callback_query
-    # Отправляем сообщение с текстом, переданным в инлайн-запросе
-    context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id)
+    try:
+        query = update.callback_query
+        # Отправляем сообщение с текстом, переданным в инлайн-запросе
+        context.bot.send_message(chat_id=query.message.chat_id, text=query.inline_message_id)
+    except Exception as e:
+        print("Error handling send_to_friend callback:", e)

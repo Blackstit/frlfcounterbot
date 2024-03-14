@@ -13,10 +13,10 @@ def connect_to_database():
     client = pymongo.MongoClient(MONGO_URL)
     db = client['test']
 
-    users_stats_collection = db.get_collection('users_stats')  # Коллекция для статистики пользователей
+    # users_stats_collection = db.get_collection('users_stats')  # Коллекция для статистики пользователей
+    chats_stats_collection = db.get_collection('chat_stats_collection') # Коллекция для статистики чатов и их пользователей
     users_collection = db.get_collection('users')  # Коллекция для пользователей
     commands_collection = db.get_collection('commands')  # Коллекция для статистики пользователей
-    tasks_collection = db.get_collection('completed_tasks')  # Коллекция для выполненных заданий
 
-    return users_stats_collection, users_collection, commands_collection, tasks_collection
+    return  chats_stats_collection, users_collection, commands_collection
 

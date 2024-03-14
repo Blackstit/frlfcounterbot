@@ -10,47 +10,77 @@ from database import connect_to_database
 from telegram.ext.dispatcher import run_async
 
 # Получение коллекций базы данных
-users_stats_collection, users_collection, commands_collection, tasks_collection = connect_to_database()
+chats_stats_collection, users_collection, commands_collection = connect_to_database()
 
 # Получаем токен
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-@run_async
 def welcome_message(update: Update, context: CallbackContext):
     new_chat_members = update.message.new_chat_members
+    chat_title = update.message.chat.title  # Получаем название чата
     chat_id = update.message.chat_id
+    bot_user = context.bot.get_me()
+
+    # Проверяем, существует ли уже статистика для этого чата
+    chat_stats_data = chats_stats_collection.find_one({"chat_title": chat_title})
+
+    if not chat_stats_data:
+        # Создаем новую статистику чата, если ее нет
+        chat_stats_data = {
+            "chat_title": chat_title,
+            "total_messages_count": 0,
+            "users": {}
+        }
+        chats_stats_collection.insert_one(chat_stats_data)
+
     for new_member in new_chat_members:
         if not new_member.is_bot:
-            context.bot.send_message(chat_id=chat_id, text="Приветствую тебя в нашем чате!")
+            # Проверяем, есть ли у пользователя запись в коллекции users_collection
+            user_data = users_collection.find_one({"_id": str(new_member.id)})
+            if user_data:
+                # Пользователь уже зарегистрирован
+                welcome_text = f"@{new_member.username}!\n\nДобро пожаловать в чат '{chat_title}'!"
+                context.bot.send_message(chat_id=chat_id, text=welcome_text)
+            else:
+                # Пользователь не зарегистрирован, отправляем приглашение к регистрации
+                invite_message = f"@{new_member.username}, салют!\n\nЧтобы писать сообщения в чате, сначала зарегистрируйся в нашем боте."
+                context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
 
-def message_handler(update, context):
+
+def message_handler(update: Update, context: CallbackContext):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     username = update.message.from_user.username
     message_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Текущая дата и время
 
-    # Получаем данные пользователя из коллекции users
-    user_data = users_collection.find_one({"_id": str(user_id)})
-    if user_data:
-        message_cost = user_data.get('message_cost', 0.5)  # Значение по умолчанию 0.5, если не задано
-        balance = user_data.get('balance', 0)
-        new_balance = balance + message_cost
+    try:
+        # Получаем данные пользователя из коллекции users
+        user_data = users_collection.find_one({"_id": str(user_id)})
+        if user_data:
+            # Получаем актуальную стоимость сообщения из данных пользователя
+            message_cost = user_data.get('message_cost', 0.5)
+            # Разрешаем отправку сообщений
+            balance = user_data.get('balance', 0)
+            new_balance = balance + message_cost
 
-        # Обновляем баланс пользователя в коллекции
-        users_collection.update_one({"_id": str(user_id)}, {"$set": {"balance": new_balance}})
+            # Обновляем баланс пользователя в коллекции
+            users_collection.update_one({"_id": str(user_id)}, {"$set": {"balance": new_balance}})
 
-        # Пользователь зарегистрирован в боте, обновляем статистику сообщений
-        users_stats_collection.update_one(
-            {'user_id': str(user_id)},
-            {'$inc': {'message_count': 1}, '$set': {'last_message_date': message_date}},
-            upsert=True
-        )
-    else:
-        # Если пользователь не зарегистрирован в боте, отправляем приглашение к регистрации
-        invite_message = f"@{username}, салют!\n\nЧтобы писать сообщения в чате, тебе сначала нужно зарегистрироваться в нашем боте. Это не займет у тебя больше минуты."
-        context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
-        context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
-
+            # Обновляем статистику сообщений в коллекции chat_stats для данного чата
+            chat_title = update.message.chat.title
+            chats_stats_collection.update_one(
+                {"chat_title": chat_title},
+                {"$inc": {"total_messages_count": 1, f"users.{user_id}.message_count": 1},
+                 "$set": {f"users.{user_id}.last_message_date": message_date}},
+                upsert=True
+            )
+        else:
+            # Пользователь не зарегистрирован в боте
+            invite_message = f"@{username}, салют!\n\nЧтобы писать сообщения в чате, тебе сначала нужно зарегистрироваться в нашем боте. Это не займет у тебя больше минуты."
+            context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
+            context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
+    except Exception as e:
+        print("Error handling message:", e)
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)
@@ -69,7 +99,7 @@ dispatcher.add_handler(CommandHandler("stats", user_commands.stats_command)) # �
 dispatcher.add_handler(CommandHandler("ref", user_commands.referral)) # Обработчик команды /ref
 
 dispatcher.add_handler(CallbackQueryHandler(user_commands.send_to_friend, pattern="^send_to_friend$")) # Обработчик нажатия на кнопку "Отправить другу"
-dispatcher.add_handler(ChatMemberHandler(welcome_message, ChatMemberUpdated)) # Обработчик новых участников чата
+dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members, welcome_message, run_async=True)) # Обработчик новых участников чата
 
 # Запускаем бота
 updater.start_polling()
