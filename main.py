@@ -46,7 +46,6 @@ def welcome_message(update: Update, context: CallbackContext):
                 invite_message = f"@{new_member.username}, салют!\n\nЧтобы писать сообщения в чате, сначала зарегистрируйся в нашем боте."
                 context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
 
-
 def message_handler(update: Update, context: CallbackContext):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
@@ -81,7 +80,6 @@ def message_handler(update: Update, context: CallbackContext):
             context.bot.send_message(chat_id=chat_id, text=invite_message, reply_markup=markups.registration_markup)
     except Exception as e:
         print("Error handling message:", e)
-
 
 # Создаем объект updater и передаем ему токен вашего бота
 updater = Updater(token=TOKEN, use_context=True)

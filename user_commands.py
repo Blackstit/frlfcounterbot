@@ -77,7 +77,6 @@ def me(update, context):
         print("Error handling /me command:", e)
 
 
-
 # Функция обработки команды /top
 # Выводит ТОП10 держателей монетки $FRFL
 def top(update, context):
@@ -227,7 +226,6 @@ def stats_command(update, context):
 
     except Exception as e:
         print("Error handling /stats command:", e)
-
 
 
 # Обработчик команды /ref
